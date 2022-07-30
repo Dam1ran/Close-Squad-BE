@@ -4,16 +4,20 @@ using CS.Core.Entities.Abstractions;
 using CS.Application.Persistence.Abstractions;
 using Microsoft.EntityFrameworkCore;
 using CS.Application.Utils;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using CS.Core.Entities.Auth;
 
 namespace CS.Persistence;
-public class Context : DbContext, IContext {
+public class Context : IdentityDbContext<User, Role, long>, IContext {
 
   private TransactionAdapter? _currentTransaction;
 
   public Context(DbContextOptions<Context> options) : base(options) {
-    Users = CreateRepository<User>();
+    Announcements = CreateRepository<ServerAnnouncement>();
+    Characters = CreateRepository<Character>();
   }
-  public IRepository<User> Users { get; private set; }
+  public IRepository<ServerAnnouncement> Announcements { get; private set; }
+  public IRepository<Character> Characters { get; private set; }
 
   public bool HasActiveTransaction => _currentTransaction != null;
 
@@ -70,7 +74,9 @@ public class Context : DbContext, IContext {
     }
   }
 
-  protected override void OnModelCreating(ModelBuilder modelBuilder) =>
+  protected override void OnModelCreating(ModelBuilder modelBuilder) {
     modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetAssembly(GetType())!);
+    base.OnModelCreating(modelBuilder);
+  }
 
 }

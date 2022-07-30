@@ -8,6 +8,15 @@ using CS.Core.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc.ApplicationModels;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using CS.Core.Entities.Auth;
+using Microsoft.AspNetCore.Identity;
+using CS.Persistence;
+using Microsoft.EntityFrameworkCore;
+using CS.Application.Persistence.Abstractions;
+using MediatR;
+using CS.Application.Commands.Abstractions;
+using CS.Infrastructure.Services.Abstractions;
+using CS.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -46,13 +55,43 @@ builder.Services.AddAntiforgery(options => {
 
 
 // builder.Services.AddAuthorization();
+builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerDocument();
-
+builder.Services.AddMediatR(typeof(CommandHandler<>));
+builder.Services.AddTransient<IEmailService, SendGridEmailService>();
+builder.Services.AddTransient<ITemplatedEmailService, TemplatedEmailService>();
 builder.Services.AddSignalR();
+
+builder.Services.AddDbContext<Context>(o => {
+  o.UseSqlServer(
+    builder.Configuration.GetSection("DefaultConnection").Value,
+    o => o.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery));
+})
+.AddScoped<IContext>(provider => provider.GetRequiredService<Context>());
+
+builder.Services.AddIdentity<User, Role>(o => {
+    o.SignIn.RequireConfirmedEmail = false;
+    o.User.RequireUniqueEmail = true;
+    o.User.AllowedUserNameCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    o.Password =
+      new PasswordOptions {
+        RequiredLength = 8,
+        RequireUppercase = true,
+        RequireNonAlphanumeric = true,
+        RequireDigit = true,
+        RequireLowercase = true
+    };
+  })
+  .AddEntityFrameworkStores<Context>()
+  .AddDefaultTokenProviders();
+
+builder.Services.Configure<DataProtectionTokenProviderOptions>(options => options.TokenLifespan = TimeSpan.FromHours(1));
+
 builder.Services.AddSingleton<ITickService, TickService>();
 builder.Services.AddSingleton<TESTNAHUI>();
+builder.Services.AddScoped<IUserService, UserService>();
 
 
 builder.Services.AddCors(options =>

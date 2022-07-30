@@ -14,10 +14,10 @@ public class AntiforgeryController : ControllerBase {
     _antiforgery = Check.NotNull(antiforgery, nameof(antiforgery));
   }
 
-  [HttpGet]
+  [HttpPost]
   [ProducesResponseType(StatusCodes.Status204NoContent)]
   [ProducesResponseType(StatusCodes.Status400BadRequest)]
-  public IActionResult GenerateAntiforgeryTokens() {
+  public IActionResult GenerateAntiforgeryToken() {
     var tokens = _antiforgery.GetAndStoreTokens(HttpContext);
     if (tokens.RequestToken is null) {
       return BadRequest("No request token");
@@ -26,7 +26,7 @@ public class AntiforgeryController : ControllerBase {
     Response.Cookies.Append(
       ApiConstants.AntiforgeryCookiePlaceholder,
       tokens.RequestToken,
-      new CookieOptions { HttpOnly = false, Secure = true, SameSite = SameSiteMode.None, Expires = DateTimeOffset.Now.AddDays(1) });
+      new CookieOptions { HttpOnly = false, Secure = true, SameSite = SameSiteMode.None });
 
     return NoContent();
   }

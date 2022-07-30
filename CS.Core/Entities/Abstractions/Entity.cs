@@ -1,9 +1,9 @@
 namespace CS.Core.Entities.Abstractions;
 public abstract class Entity {
   private int? _hashCode;
-  private int _Id;
+  private long _Id;
 
-  public virtual int Id {
+  public virtual long Id {
     get => _Id;
     protected set => _Id = value;
   }

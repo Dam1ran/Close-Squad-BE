@@ -2,7 +2,8 @@ using CS.Core.Entities;
 
 namespace CS.Application.Persistence.Abstractions;
 public interface IContext {
-  IRepository<User> Users { get; }
+  IRepository<ServerAnnouncement> Announcements { get; }
+  IRepository<Character> Characters { get; }
   bool HasActiveTransaction { get; }
   ITransaction? CurrentTransaction { get; }
 

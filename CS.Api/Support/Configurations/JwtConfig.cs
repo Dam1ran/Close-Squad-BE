@@ -1,4 +1,4 @@
-namespace CS.Api.Support;
+namespace CS.Api.Support.Configuration;
 public class JwtConfig {
   public string Secret { get; set; } = string.Empty;
   public string ValidIssuer { get; set; } = string.Empty;

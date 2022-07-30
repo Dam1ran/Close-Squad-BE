@@ -22,13 +22,12 @@ public class ValidateAntiforgeryTokenFilter : IAsyncAuthorizationFilter, IAntifo
 
     try {
       await _antiforgery.ValidateRequestAsync(context.HttpContext);
-
     } catch (AntiforgeryValidationException e) {
+      context.Result = new AntiforgeryValidationFailedResult();
+      context.HttpContext.Response.Headers[ApiConstants.AntiforgeryCookiePlaceholder] = string.Empty;
+
       _logger.LogWarning(e.Message);
       _logger.LogWarning(e.InnerException?.Message);
-
-      context.Result = new AntiforgeryValidationFailedResult();
-      // context.Result = new RedirectResult("https://localhost:7271/antiforgery");
     }
   }
 }
