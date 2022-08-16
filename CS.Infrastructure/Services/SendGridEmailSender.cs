@@ -1,25 +1,26 @@
+using CS.Application.Options;
+using CS.Application.Options.Abstractions;
 using CS.Application.Utils;
 using CS.Infrastructure.Models;
 using CS.Infrastructure.Services.Abstractions;
-using CS.Infrastructure.Support.Configurations;
-using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using SendGrid;
 using SendGrid.Helpers.Mail;
 
 namespace CS.Infrastructure.Services;
 public class SendGridEmailService : IEmailService{
-  private readonly IConfiguration _configuration;
-  public SendGridEmailService(IConfiguration configuration) {
-    _configuration = Check.NotNull(configuration, nameof(configuration));
-  }
+  private readonly SendGridOptions _sendGridOptions;
+  private readonly SendEmailOptions _sendEmailOptions;
 
+  public SendGridEmailService(IOptions<SendEmailOptions> sendEmailOptions,
+    IOptions<SendGridOptions> sendGridOptions) {
+    _sendGridOptions = Check.NotNull(sendGridOptions?.Value, nameof(sendGridOptions))!;
+    _sendEmailOptions = Check.NotNull(sendEmailOptions?.Value, nameof(sendEmailOptions))!;
+  }
   public async Task<SendEmailResponse> SendAsync(EmailDetails emailDetails) {
-    var apiKey = _configuration["CloseSquadSendGridKey"];
-    var client = new SendGridClient(apiKey);
-    SendEmailSettings sendEmailSettings = new ();
-    _configuration.GetSection("SendEmailSettings").Bind(sendEmailSettings);
-    var from = new EmailAddress(sendEmailSettings.FromEmail, sendEmailSettings.FromName);
+    var client = new SendGridClient(_sendGridOptions.Key);
+
+    var from = new EmailAddress(_sendEmailOptions.FromEmail, _sendEmailOptions.FromName);
     var subject = emailDetails.Subject;
     var to = new EmailAddress(emailDetails.ToEmail, emailDetails.ToName);
     var content = emailDetails.Content;

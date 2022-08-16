@@ -17,16 +17,16 @@ using MediatR;
 using CS.Application.Commands.Abstractions;
 using CS.Infrastructure.Services.Abstractions;
 using CS.Infrastructure.Services;
+using CS.Application.Services.Abstractions;
+using Microsoft.AspNetCore.HttpOverrides;
+using CS.Api.Support.Middleware;
+using CS.Api.Services.Abstractions;
+using CS.Api.Support.Other;
+using CS.Api.Support.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddRouting(options => options.LowercaseUrls = true);
-
-builder.Services.AddControllers(options => {
-  options.Filters.Add<ExceptionFilter>();
-  options.Conventions.Add(new RouteTokenTransformerConvention(new SlugifyParameterTransformer()));
-  options.Filters.Add<ValidateAntiforgeryTokenFilter>();
-});
 
 // JwtConfig jwtConfig = new ();
 // builder.Configuration.GetSection("JwtConfig").Bind(jwtConfig);
@@ -50,18 +50,40 @@ builder.Services.AddAntiforgery(options => {
   options.Cookie.HttpOnly = true;
   options.SuppressXFrameOptionsHeader = false;
   options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-  options.HeaderName = ApiConstants.AntiforgeryHeaderPlaceholder;
+  options.HeaderName = Api_Constants.AntiforgeryHeaderPlaceholder;
 });
 
+builder.Services.Configure<ForwardedHeadersOptions>(options => {
+  options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+  options.ForwardLimit = 1; // change when are known proxies or load balancers
+  // options.KnownProxies.Add(IPAddress.Parse("::ffff:172.168.0.57")); // add if the case and ignore ForwardLimit
+  options.KnownNetworks.Clear();
+  options.KnownProxies.Clear();
+});
+
+builder.Services.AddDistributedMemoryCache();
+builder.Services.AddSession(options => {
+  // options.IdleTimeout = TimeSpan.FromMinutes(10);
+  options.Cookie.SameSite = SameSiteMode.None;
+  options.Cookie.HttpOnly = true;
+  options.Cookie.IsEssential = true;
+  options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+});
 
 // builder.Services.AddAuthorization();
 builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerDocument();
+builder.Services.AddApplicationOptions();
 builder.Services.AddMediatR(typeof(CommandHandler<>));
+builder.Services.AddSingleton<ICacheService, CacheService>();
 builder.Services.AddTransient<IEmailService, SendGridEmailService>();
 builder.Services.AddTransient<ITemplatedEmailService, TemplatedEmailService>();
+builder.Services.AddSingleton<ICachedUserService, CachedUserService>();
+builder.Services.AddSingleton<ICaptchaCacheService, CaptchaCacheService>();
+builder.Services.AddScoped(typeof(IStatisticsCacheService<>), typeof(StatisticsCacheService<>));
+builder.Services.AddScoped<ICaptchaService, CaptchaService>();
 builder.Services.AddSignalR();
 
 builder.Services.AddDbContext<Context>(o => {
@@ -100,20 +122,32 @@ builder.Services.AddCors(options =>
       .AllowAnyHeader()
       .AllowAnyMethod()
       .AllowCredentials()
-      .WithHeaders(ApiConstants.AntiforgeryCookiePlaceholder, ApiConstants.AntiforgeryHeaderPlaceholder, ApiConstants.ContentType)
-      .WithExposedHeaders(ApiConstants.AntiforgeryCookiePlaceholder, ApiConstants.ContentType)
+      .WithHeaders(Api_Constants.AntiforgeryCookiePlaceholder, Api_Constants.AntiforgeryHeaderPlaceholder, Api_Constants.ContentType)
+      .WithExposedHeaders(Api_Constants.AntiforgeryCookiePlaceholder, Api_Constants.ContentType)
   )
 );
 
 
+builder.Services.AddControllers(options => {
+  options.Filters.Add<ExceptionFilter>();
+  options.Conventions.Add(new RouteTokenTransformerConvention(new SlugifyParameterTransformer()));
+  options.Filters.Add<ValidateAntiforgeryTokenFilter>();
+});
+
 var app = builder.Build();
+
+app.UseMiddleware<CatchMiddlewareExceptions>();
+
+app.UseRouting();
+app.UseCors();
+
 
 if (app.Environment.IsDevelopment()) {
   app.UseOpenApi();
   app.UseSwaggerUi3();
 }
 
-app.UseCors();
+app.UseForwardedHeaders();
 
 app.UseHttpsRedirection();
 
@@ -133,11 +167,17 @@ app.UseSecurityHeaders(policies => policies
   .AddCrossOriginResourcePolicy(builder => builder.SameOrigin())
   .AddCrossOriginEmbedderPolicy(builder => builder.RequireCorp()));
 
+app.UseMiddleware<AttributeRateLimiting>();
 
-// app.UseRouting();
+app.UseSession();
+
+app.UseMiddleware<CaptchaInquiry>();
+
 app.UseAuthentication();
-app.UseAuthorization();
+app.UseMiddleware<AuthenticatedClientRateLimiting>();
 
+
+app.UseAuthorization();
 app.MapControllers();
 
 app.MapHub<MainHub>("/MainHub");

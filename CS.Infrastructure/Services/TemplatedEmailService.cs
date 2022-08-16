@@ -1,20 +1,19 @@
 using System.Reflection;
 using System.Text;
+using CS.Application.Options;
+using CS.Application.Options.Abstractions;
 using CS.Application.Utils;
 using CS.Infrastructure.Models;
 using CS.Infrastructure.Services.Abstractions;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
 
 namespace CS.Infrastructure.Services;
 public class TemplatedEmailService : ITemplatedEmailService {
   private readonly IEmailService _emailService;
-  private readonly IConfiguration _configuration;
+  private readonly ExternalInfoOptions _externalInfoOptions;
 
-
-  public TemplatedEmailService(IEmailService emailService, IConfiguration configuration) {
+  public TemplatedEmailService(IOptions<ExternalInfoOptions> externalInfoOptions, IEmailService emailService) {
+    _externalInfoOptions = Check.NotNull(externalInfoOptions?.Value, nameof(externalInfoOptions))!;
     _emailService = Check.NotNull(emailService, nameof(emailService));
-    _configuration = Check.NotNull(configuration, nameof(configuration));
   }
 
   public async Task<SendEmailResponse> SendConfirmationAsync(string email, string userName, string confirmationLink) {
@@ -28,7 +27,7 @@ public class TemplatedEmailService : ITemplatedEmailService {
     templateText = templateText
       .Replace("--UserName--", userName)
       .Replace("--ConfirmationButtonLink--", confirmationLink)
-      .Replace("--WebSiteLink--", _configuration["WebSiteLink"]);
+      .Replace("--WebSiteLink--", _externalInfoOptions.WebSiteLink);
 
     return await _emailService.SendAsync(new EmailDetails() {
       ToName = userName,

@@ -1,6 +1,9 @@
 using CS.Api.Support;
+using CS.Api.Support.Attributes;
 using CS.Application.Utils;
+using CS.Core.Support;
 using Microsoft.AspNetCore.Antiforgery;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CS.Api.Controllers;
@@ -15,6 +18,9 @@ public class AntiforgeryController : ControllerBase {
   }
 
   [HttpPost]
+  [AllowAnonymous]
+  [SkipCaptchaCheck]
+  [LimitRequests(TimeWindowInSeconds = Core_TimeConstants._20_Minutes_InSeconds, MaxRequests = 4, By = LimitRequestsType.IpAndEndpoint)]
   [ProducesResponseType(StatusCodes.Status204NoContent)]
   [ProducesResponseType(StatusCodes.Status400BadRequest)]
   public IActionResult GenerateAntiforgeryToken() {
@@ -24,7 +30,7 @@ public class AntiforgeryController : ControllerBase {
     }
 
     Response.Cookies.Append(
-      ApiConstants.AntiforgeryCookiePlaceholder,
+      Api_Constants.AntiforgeryCookiePlaceholder,
       tokens.RequestToken,
       new CookieOptions { HttpOnly = false, Secure = true, SameSite = SameSiteMode.None });
 

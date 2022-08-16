@@ -3,7 +3,7 @@ using CS.Core.Entities.Auth;
 using CS.Core.ValueObjects;
 
 namespace CS.Core.Entities;
-public class Character : Entity {
+public class Character : Entity { // NOT DONE
 
   public Character(string name, User user) {
     Name = new Name(name);

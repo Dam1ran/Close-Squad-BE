@@ -1,45 +1,42 @@
 using System.Web;
-using CS.Application.Exceptions;
+using CS.Application.Options;
+using CS.Application.Options.Abstractions;
 using CS.Application.Utils;
 using CS.Core.Entities.Auth;
-using CS.Infrastructure.Exceptions;
 using CS.Infrastructure.Models;
 using CS.Infrastructure.Services.Abstractions;
 using CS.Infrastructure.Support.Constants;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.Configuration;
 
 namespace CS.Infrastructure.Services;
 public class UserService : IUserService {
+  private readonly ExternalInfoOptions _externalInfoOptions;
   private readonly UserManager<User> _userManager;
+  // private readonly SignInManager<User> _signInManager;
   private readonly IHttpContextAccessor _httpContextAccessor;
   private readonly ITemplatedEmailService _templatedEmailService;
-  private readonly IConfiguration _configuration;
   private readonly IDataProtector _dataProtector;
+
   public UserService(
+    IOptions<ExternalInfoOptions> externalInfoOptions,
     UserManager<User> userManager,
     IHttpContextAccessor httpContextAccessor,
     ITemplatedEmailService templatedEmailService,
-    IConfiguration configuration,
     IDataProtectionProvider dataProtectionProvider) {
+    _externalInfoOptions = Check.NotNull(externalInfoOptions?.Value, nameof(externalInfoOptions))!;
     _userManager = Check.NotNull(userManager, nameof(userManager));
     _httpContextAccessor = Check.NotNull(httpContextAccessor, nameof(httpContextAccessor));
     _templatedEmailService = Check.NotNull(templatedEmailService, nameof(templatedEmailService));
-    _configuration = Check.NotNull(configuration, nameof(configuration));
-    _dataProtector = dataProtectionProvider.CreateProtector(DataProtectionPurposeStringsConstants.UserIdRouteValue);
+    _dataProtector = dataProtectionProvider.CreateProtector(Infrastructure_DataProtectionPurposeStringsConstants.UserKeyEncryption);
   }
   public async Task<IdentityResult> CreateUser(string nickname, string email, string password) {
-    var user = new User {
-      UserName = nickname,
-      Email = email,
-      EmailConfirmed = false
-    };
-    return await _userManager.CreateAsync(user, password);
+    return await _userManager.CreateAsync(new User(nickname, email), password);
   }
 
   public async Task<SendEmailResponse> SendConfirmationEmail(string email) {
+
     var user = await _userManager.FindByEmailAsync(email);
     if (user is null) {
       return SendEmailResponse.Failed("User with specified email does not exists.");
@@ -48,14 +45,13 @@ public class UserService : IUserService {
     var confirmationToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
 
     return await _templatedEmailService
-      .SendConfirmationAsync(user.Email, user.UserName, CreateConfirmationLink(user.Id, confirmationToken));
+      .SendConfirmationAsync(user.Email, user.UserName, CreateConfirmationLink(user.UserName, confirmationToken));
   }
 
-  private string CreateConfirmationLink(long userId, string confirmationToken) {
-    var confirmAddress = _configuration["ConfirmAddressLink"];
-    var protectedUserId = HttpUtility.UrlEncode(_dataProtector.Protect(userId.ToString()));
+  private string CreateConfirmationLink(string userKey, string confirmationToken) {
+    var protectedUserId = HttpUtility.UrlEncode(_dataProtector.Protect(userKey));
     var token = HttpUtility.UrlEncode(_dataProtector.Protect(confirmationToken));
 
-    return $"{confirmAddress}?guid={protectedUserId}&token={token}";
+    return $"{_externalInfoOptions.ConfirmAddressLink}?guid={protectedUserId}&token={token}";
   }
 }

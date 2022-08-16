@@ -1,7 +1,7 @@
-using System.Web;
+using CS.Api.Support.Attributes;
 using CS.Api.Support.Models.Auth;
 using CS.Application.Utils;
-using CS.Infrastructure.Services;
+using CS.Core.Support;
 using CS.Infrastructure.Services.Abstractions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -21,29 +21,18 @@ public class AuthController : ControllerBase {
     _apiBehaviorOptions = Check.NotNull(apiBehaviorOptions, nameof(apiBehaviorOptions));
   }
 
-  [ProducesResponseType(typeof(IEnumerable<Kkt>), StatusCodes.Status200OK)]
-  [ProducesDefaultResponseType]
-  [HttpGet("Get")]
-
-  public ActionResult<IEnumerable<Kkt>> Get() {
-    var ziu = new List<Kkt>();
-    ziu.Add(new Kkt { Name = "boris", Cartoafi = new List<Cartof>{ new Cartof { Sort = "okisori" }, new Cartof { Sort = "belicuts" },} });
-    ziu.Add(new Kkt { Name = "jake" });
-    // var fiu = ziu[3];
-    _logger.LogWarning("KIKAT NAHUI");
-    return Ok(ziu);
-  }
-
   [AllowAnonymous]
   [HttpGet("Login")]
   [ProducesDefaultResponseType]
   [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
-  public async Task<ActionResult<string>> Login() {
+  public async Task<ActionResult<string>> Login() { // NOT DONE
     await Task.Run(() => {});
     return Ok("pizdet");
   }
 
   [AllowAnonymous]
+  [LimitRequests(TimeWindowInSeconds = Core_TimeConstants._20_Minutes_InSeconds, MaxRequests = 4, By = LimitRequestsType.IpAndEndpoint)]
+  [CheckCaptcha]
   [HttpPost("register")]
   [ProducesDefaultResponseType]
   [ProducesResponseType(StatusCodes.Status200OK)]
@@ -79,16 +68,18 @@ public class AuthController : ControllerBase {
     }
 
     ModelState.AddModelError("Confirmation", "Error has occurred while sending confirmation email.");
+
     return _apiBehaviorOptions.Value.InvalidModelStateResponseFactory(ControllerContext);
   }
 
   [AllowAnonymous]
+  [LimitRequests(TimeWindowInSeconds = Core_TimeConstants._20_Minutes_InSeconds, MaxRequests = 4, By = LimitRequestsType.IpAndEndpoint)]
   [HttpPost("confirm-email")]
   [ProducesDefaultResponseType]
-  [ProducesResponseType(StatusCodes.Status204NoContent)]
-  [ProducesResponseType(StatusCodes.Status200OK)]
-  [ProducesResponseType(StatusCodes.Status400BadRequest)]
-  public async Task<ActionResult> ConfirmEmail([FromBody] ConfirmEmailDto confirmEmailDto) {
+  // [ProducesResponseType(StatusCodes.Status204NoContent)]
+  // [ProducesResponseType(StatusCodes.Status200OK)]
+  // [ProducesResponseType(StatusCodes.Status400BadRequest)]
+  public async Task<ActionResult> ConfirmEmail([FromBody] ConfirmEmailDto confirmEmailDto) { // NOT DONE
     
 
     // var response = await _userService.SendConfirmationEmail(userRegisterDto.Email);

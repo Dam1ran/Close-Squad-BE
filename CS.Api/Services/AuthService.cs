@@ -1,7 +1,7 @@
 using System.Security.Cryptography;
 
 namespace CS.Api.Services;
-public class AuthService {
+public class AuthService { // NOT DONE
   public RefreshToken Generate() {
     return new RefreshToken {
       Token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64)),
