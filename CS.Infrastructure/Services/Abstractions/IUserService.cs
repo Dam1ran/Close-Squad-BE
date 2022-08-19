@@ -5,4 +5,5 @@ namespace CS.Infrastructure.Services.Abstractions;
 public interface IUserService {
   Task<IdentityResult> CreateUser(string nickname, string email, string password);
   Task<SendEmailResponse> SendConfirmationEmail(string email);
+  Task<IdentityResult> ConfirmEmail(string guid, string token);
 }

@@ -21,5 +21,9 @@ public static class OptionsServiceCollectionExtensions {
       .AddOptions<SendEmailOptions>()
       .BindConfiguration(SendEmailOptions.SendEmail)
       .ValidateDataAnnotations()
+      .Services
+      .AddOptions<ExternalInfoOptions>()
+      .BindConfiguration(ExternalInfoOptions.ExternalInfo)
+      .ValidateDataAnnotations()
       .Services.AddSingleton(typeof(IOptions<>), typeof(OptionsAdapter<>));
 }

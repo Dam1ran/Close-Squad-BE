@@ -74,21 +74,39 @@ public class AuthController : ControllerBase {
 
   [AllowAnonymous]
   [LimitRequests(TimeWindowInSeconds = Core_TimeConstants._20_Minutes_InSeconds, MaxRequests = 4, By = LimitRequestsType.IpAndEndpoint)]
+  [SkipCaptchaCheck]
   [HttpPost("confirm-email")]
   [ProducesDefaultResponseType]
-  // [ProducesResponseType(StatusCodes.Status204NoContent)]
-  // [ProducesResponseType(StatusCodes.Status200OK)]
-  // [ProducesResponseType(StatusCodes.Status400BadRequest)]
-  public async Task<ActionResult> ConfirmEmail([FromBody] ConfirmEmailDto confirmEmailDto) { // NOT DONE
-    
+  [ProducesResponseType(StatusCodes.Status204NoContent)]
+  [ProducesResponseType(StatusCodes.Status400BadRequest)]
+  public async Task<IActionResult> ConfirmEmail([FromBody] ConfirmEmailDto confirmEmailDto) {
+    var identityResult = await _userService.ConfirmEmail(confirmEmailDto.Guid, confirmEmailDto.Token);
+    if (!identityResult.Succeeded) {
+      return BadRequest(identityResult.Errors.First());
+    }
 
-    // var response = await _userService.SendConfirmationEmail(userRegisterDto.Email);
-
-    // if (response.Successful) {
-    //   return Ok("Confirmation email sent to specified address");
-    // }
-
-    // return BadRequest(response.Errors);
     return NoContent();
+  }
+
+  [AllowAnonymous]
+  [LimitRequests(TimeWindowInSeconds = Core_TimeConstants._20_Minutes_InSeconds, MaxRequests = 4, By = LimitRequestsType.IpAndEndpoint)]
+  [CheckCaptcha]
+  [HttpPost("resend-confirmation")]
+  [ProducesDefaultResponseType]
+  [ProducesResponseType(StatusCodes.Status200OK)]
+  [ProducesResponseType(StatusCodes.Status400BadRequest)]
+  public async Task<IActionResult> ResendConfirmation([FromBody] ResendConfirmationDto resendConfirmationDto) {
+    var sendEmailResponse = await _userService.SendConfirmationEmail(resendConfirmationDto.Email);
+    if (sendEmailResponse.Successful) {
+      return Ok("Confirmation email sent to specified address.");
+    }
+
+    foreach(var err in sendEmailResponse.Errors) {
+      _logger.LogWarning($"Email confirmation error: {err}");
+    }
+
+    ModelState.AddModelError("Confirmation", "Error has occurred while sending confirmation email.");
+
+    return _apiBehaviorOptions.Value.InvalidModelStateResponseFactory(ControllerContext);
   }
 }

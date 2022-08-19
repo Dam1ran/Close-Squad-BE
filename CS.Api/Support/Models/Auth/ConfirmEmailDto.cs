@@ -3,8 +3,8 @@ using System.ComponentModel.DataAnnotations;
 namespace CS.Api.Support.Models.Auth;
 
 public class ConfirmEmailDto {
-  [Required]
+  [Required(AllowEmptyStrings = false)]
   public string Guid { get; set; } = string.Empty;
-  [Required]
+  [Required(AllowEmptyStrings = false)]
   public string Token { get; set; } = string.Empty;
 }
