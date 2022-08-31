@@ -1,7 +1,7 @@
 using CS.Application.Commands.Abstractions;
-using CS.Application.Models;
+using CS.Application.DataTransferObjects;
 using CS.Application.Persistence.Abstractions;
-using CS.Application.Utils;
+using CS.Application.Support.Utils;
 using CS.Core.Entities;
 using MediatR;
 using Microsoft.Extensions.Logging;
@@ -24,9 +24,10 @@ public class CreateAnnouncementCommandHandler : CommandHandler<CreateAnnouncemen
   public override async Task<ServerAnnouncementDto> Handle(CreateAnnouncementCommand request, CancellationToken cancellationToken) {
     var announcement = new ServerAnnouncement(request.Message);
 
-    await _context.Announcements.AddAsync(announcement);
+    // await _context.Announcements.AddAsync(announcement);
     await _context.SaveChangesAsync();
 
     return announcement.MapToDto();
   }
+
 }

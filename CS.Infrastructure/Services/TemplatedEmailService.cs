@@ -1,10 +1,10 @@
 using System.Reflection;
 using System.Text;
+using CS.Application.Models;
 using CS.Application.Options;
 using CS.Application.Options.Abstractions;
-using CS.Application.Utils;
-using CS.Infrastructure.Models;
-using CS.Infrastructure.Services.Abstractions;
+using CS.Application.Services.Abstractions;
+using CS.Application.Support.Utils;
 
 namespace CS.Infrastructure.Services;
 public class TemplatedEmailService : ITemplatedEmailService {
@@ -36,5 +36,7 @@ public class TemplatedEmailService : ITemplatedEmailService {
       IsHTML = true,
       Content = templateText
     });
+
   }
+
 }

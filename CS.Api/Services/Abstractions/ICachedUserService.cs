@@ -1,8 +1,9 @@
 using CS.Api.Support.Models;
-using Microsoft.AspNetCore.Identity;
+using CS.Application.Models;
+using CS.Core.ValueObjects;
 
 namespace CS.Api.Services.Abstractions;
 public interface ICachedUserService {
-  Task<CachedUser?> GetByNicknameAsync(string nickname, CancellationToken cancellationToken);
-  Task<IdentityResult> UpdateAsync(string nickname, CachedUser cachedUser, CancellationToken cancellationToken);
+  Task<CachedUser?> GetByNicknameAsync(Nickname nickname, CancellationToken cancellationToken);
+  Task<UserManagerResponse> UpdateAsync(Nickname nickname, CachedUser cachedUser, CancellationToken cancellationToken);
 }

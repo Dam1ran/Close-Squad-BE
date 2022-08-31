@@ -5,8 +5,8 @@ using System.Security.Cryptography;
 using System.Text;
 using CS.Application.Options;
 using CS.Application.Options.Abstractions;
-using CS.Application.Services.Abstractions;
-using CS.Application.Utils;
+using CS.Application.Models.Abstractions;
+using CS.Application.Support.Utils;
 
 namespace CS.Api.Services;
 public class CaptchaService : ICaptchaService {
@@ -48,7 +48,7 @@ public class CaptchaService : ICaptchaService {
 
     var memoryStream = new MemoryStream();
     bitmap.Save(memoryStream, ImageFormat.Png);
-    return new Application.Services.Image("captcha.png", memoryStream);
+    return new Application.Models.Image("captcha.png", memoryStream);
   }
 
   private void AddLines(Graphics graphics) {
@@ -118,4 +118,5 @@ public class CaptchaService : ICaptchaService {
     graphicPath.Dispose();
     hatchBrush.Dispose();
   }
+
 }

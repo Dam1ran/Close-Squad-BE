@@ -1,7 +1,5 @@
-using CS.Application.Exceptions;
-using CS.Application.Utils;
+using CS.Application.Support.Utils;
 using CS.Core.Exceptions;
-using CS.Infrastructure.Exceptions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 
@@ -14,7 +12,7 @@ public class ExceptionFilter : IAsyncExceptionFilter {
   }
 
   public Task OnExceptionAsync(ExceptionContext context) {
-    _logger.LogError(context.Exception.Message, "An error occurred");
+    _logger.LogError(context.Exception.Message);
     context.Result = GetResult(context.Exception);
     return Task.CompletedTask;
   }
@@ -23,15 +21,15 @@ public class ExceptionFilter : IAsyncExceptionFilter {
     return ex switch {
       AlreadyExistsException => new StatusCodeResult(StatusCodes.Status303SeeOther),
       DomainValidationException => new BadRequestObjectResult(GetErrorBody(ex)),
-      UserAlreadyExistsException => new BadRequestObjectResult(GetErrorBody(ex)),
+      NotFoundException => new NotFoundObjectResult(GetErrorBody(ex)),
       // UnauthorizedException => new ForbidResult(),
       // NotAcceptableException => new StatusCodeResult(StatusCodes.Status406NotAcceptable),
       // ConflictException => new ConflictObjectResult(GetErrorBody(ex)),
-      NotFoundException => new NotFoundObjectResult(GetErrorBody(ex)),
       _ => ex.InnerException != null
           ? GetResult(ex.InnerException)
           : new StatusCodeResult(StatusCodes.Status500InternalServerError),
     };
+
   }
 
   public static object GetErrorBody(Exception ex) => new { errorMessage = ex.Message, data = ex.Data };

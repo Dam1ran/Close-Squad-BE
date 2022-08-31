@@ -1,30 +1,23 @@
 ﻿using System.Reflection;
-using CS.Core.Entities;
-using CS.Core.Entities.Abstractions;
 using CS.Application.Persistence.Abstractions;
 using Microsoft.EntityFrameworkCore;
-using CS.Application.Utils;
-using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using CS.Application.Support.Utils;
 using CS.Core.Entities.Auth;
+using CS.Core.Entities;
 
 namespace CS.Persistence;
-public class Context : IdentityDbContext<User, Role, long>, IContext {
+public class Context : DbContext, IContext {
 
   private TransactionAdapter? _currentTransaction;
 
-  public Context(DbContextOptions<Context> options) : base(options) {
-    Announcements = CreateRepository<ServerAnnouncement>();
-    Characters = CreateRepository<Character>();
-  }
-  public IRepository<ServerAnnouncement> Announcements { get; private set; }
-  public IRepository<Character> Characters { get; private set; }
+  public Context(DbContextOptions<Context> options) : base(options) { }
+
+  public DbSet<CsUser> CsUsers { get; set; } = null!;
+  public DbSet<ServerAnnouncement> ServerAnnouncements { get; set; } = null!;
 
   public bool HasActiveTransaction => _currentTransaction != null;
 
   public ITransaction? CurrentTransaction => _currentTransaction;
-
-  public IRepository<TEntity> CreateRepository<TEntity>() where TEntity: Entity =>
-    new Repository<TEntity>(Set<TEntity>());
 
   int IContext.SaveChanges() => SaveChanges();
 
@@ -76,6 +69,7 @@ public class Context : IdentityDbContext<User, Role, long>, IContext {
 
   protected override void OnModelCreating(ModelBuilder modelBuilder) {
     modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetAssembly(GetType())!);
+    modelBuilder.HasDefaultSchema("cs");
     base.OnModelCreating(modelBuilder);
   }
 

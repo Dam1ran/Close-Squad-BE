@@ -1,4 +1,36 @@
+
+token middleware
+refresh token endpoint, infra and setups
+check cs role
+
+/// push IV
+
+commit checks
+user token service and infra
+work on login
+cache cleanups
+create tokens with caching
+user manager login
+check deleting entities -> fixed FK
+data protection
+user manager create user
+user manager implementation
+removed identity and user manager
+repo pattern to hold specifications if needed
+spread auth tables
+configured value objects to entities
+reworked nickname regex
+added value object with regex
+check salt for uniqueness for same password
+decision on user child entities -> separate tables
+kicked specification pattern for trouble reasons with EF core
+
+/// push III
+
+commit checks
+resend confirmation email service and co
 email confirmation infra and setup
+bug on missing ExternalInfoOptions
 
 /// push II
 

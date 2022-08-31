@@ -15,7 +15,6 @@ using Microsoft.EntityFrameworkCore;
 using CS.Application.Persistence.Abstractions;
 using MediatR;
 using CS.Application.Commands.Abstractions;
-using CS.Infrastructure.Services.Abstractions;
 using CS.Infrastructure.Services;
 using CS.Application.Services.Abstractions;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -23,6 +22,7 @@ using CS.Api.Support.Middleware;
 using CS.Api.Services.Abstractions;
 using CS.Api.Support.Other;
 using CS.Api.Support.Extensions;
+using CS.Application.Services.Implementations;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -76,13 +76,15 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerDocument();
 builder.Services.AddApplicationOptions();
+builder.Services.AddRepositories();
 builder.Services.AddMediatR(typeof(CommandHandler<>));
+builder.Services.AddScoped<ICsTimeLimitedDataProtector, CsTimeLimitedDataProtector>();
+builder.Services.AddScoped<IUserManager, UserManager>();
 builder.Services.AddSingleton<ICacheService, CacheService>();
+builder.Services.AddScoped<IUserTokenService, UserTokenService>();
 builder.Services.AddTransient<IEmailService, SendGridEmailService>();
 builder.Services.AddTransient<ITemplatedEmailService, TemplatedEmailService>();
 builder.Services.AddSingleton<ICachedUserService, CachedUserService>();
-builder.Services.AddSingleton<ICaptchaCacheService, CaptchaCacheService>();
-builder.Services.AddScoped(typeof(IStatisticsCacheService<>), typeof(StatisticsCacheService<>));
 builder.Services.AddScoped<ICaptchaService, CaptchaService>();
 builder.Services.AddSignalR();
 
@@ -93,27 +95,10 @@ builder.Services.AddDbContext<Context>(o => {
 })
 .AddScoped<IContext>(provider => provider.GetRequiredService<Context>());
 
-builder.Services.AddIdentity<User, Role>(o => {
-    o.SignIn.RequireConfirmedEmail = false;
-    o.User.RequireUniqueEmail = true;
-    o.User.AllowedUserNameCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    o.Password =
-      new PasswordOptions {
-        RequiredLength = 8,
-        RequireUppercase = true,
-        RequireNonAlphanumeric = true,
-        RequireDigit = true,
-        RequireLowercase = true
-    };
-  })
-  .AddEntityFrameworkStores<Context>()
-  .AddDefaultTokenProviders();
-
-builder.Services.Configure<DataProtectionTokenProviderOptions>(options => options.TokenLifespan = TimeSpan.FromHours(1));
+builder.Services.AddDataProtection();
 
 builder.Services.AddSingleton<ITickService, TickService>();
 builder.Services.AddSingleton<TESTNAHUI>();
-builder.Services.AddScoped<IUserService, UserService>();
 
 
 builder.Services.AddCors(options =>

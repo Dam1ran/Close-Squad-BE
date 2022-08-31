@@ -1,46 +1,60 @@
 using System.Net;
-using CS.Api.Services.Abstractions;
-using CS.Api.Support.Models;
 using CS.Api.Support.Models.Abstractions;
-using CS.Application.Utils;
+using CS.Application.Services.Abstractions;
+using CS.Application.Support.Constants;
+using CS.Application.Support.Utils;
 
 namespace CS.Api.Support.Middleware;
 public class AuthenticatedClientRateLimiting {
   private readonly RequestDelegate _next;
+  private readonly ICacheService _cacheService;
   private readonly ILogger<AuthenticatedClientRateLimiting> _logger;
   private readonly int TimeWindowInMilliSeconds = 1000;
   private readonly int MaxRequests = 1;
 
-  public AuthenticatedClientRateLimiting(RequestDelegate next, ILogger<AuthenticatedClientRateLimiting> logger) {
+  public AuthenticatedClientRateLimiting(
+    RequestDelegate next,
+    ICacheService cacheService,
+    ILogger<AuthenticatedClientRateLimiting> logger) {
     _next = Check.NotNull(next, nameof(next));
+    _cacheService = Check.NotNull(cacheService, nameof(cacheService));
     _logger = Check.NotNull(logger, nameof(logger));
   }
 
-  public async Task InvokeAsync(HttpContext httpContext, IStatisticsCacheService<AuthenticatedClientStatistics> cacheService) {
-    var email = GetClientEmail(httpContext);
-    if (string.IsNullOrEmpty(email)) {
+  public async Task InvokeAsync(HttpContext httpContext) {
+
+    var nickname = GetClientNickname(httpContext);
+    if (string.IsNullOrEmpty(nickname)) {
       await _next(httpContext);
       return;
     }
-    var key = $"[{email}]";
-    var existingWrapper = await cacheService.GetAsync(key, httpContext.RequestAborted);
-    if (existingWrapper?.Entity is not null) {
-      if (existingWrapper.Entity.NumberOfRequests >= MaxRequests) {
+
+    var key = $"[{nickname}]";
+    var statistics = await _cacheService
+      .GetAsync<StatisticsEntity>(CacheGroupKeyConstants.AuthenticatedClientStatistics, key, httpContext.RequestAborted);
+
+    if (statistics is not null) {
+      if (statistics.NumberOfRequests >= MaxRequests) {
         httpContext.Response.StatusCode = (int)HttpStatusCode.TooManyRequests;
         return;
       }
 
-      existingWrapper.Entity.NumberOfRequests++;
+      statistics.NumberOfRequests++;
     }
 
-    await cacheService.SetAsync(
+    var expiresAt = DateTimeOffset.UtcNow.AddMilliseconds(TimeWindowInMilliSeconds);
+    var saveStatistics = statistics ?? new StatisticsEntity(1, expiresAt);
+    await _cacheService.SetAsync(
+      CacheGroupKeyConstants.AuthenticatedClientStatistics,
       key,
-      existingWrapper ?? StatisticsEntityWrapper<AuthenticatedClientStatistics>.FromEntity(new (1), DateTimeOffset.UtcNow.AddMilliseconds(TimeWindowInMilliSeconds)),
+      saveStatistics,
+      absoluteExpiration: saveStatistics.ExpiresAt,
       cancellationToken: httpContext.RequestAborted);
 
     await _next(httpContext);
   }
-  private string GetClientEmail(HttpContext httpContext) {
+  private string GetClientNickname(HttpContext httpContext) {
     return string.Empty; // TODO
   }
+
 }

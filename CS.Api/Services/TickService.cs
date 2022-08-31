@@ -11,10 +11,10 @@ public class TickService : ITickService
   private readonly PeriodicTimer _100ms_timer = new(TimeSpan.FromMilliseconds(100));
 
   public TickService() {
-    new Thread(ticker).Start();
+    new Thread(Ticker).Start();
   }
 
-  private async void ticker() {
+  private async void Ticker() {
     byte counter = 0;
     while (await _100ms_timer.WaitForNextTickAsync()) {
       counter++;
@@ -33,4 +33,5 @@ public class TickService : ITickService
       }
     };
   }
+
 }

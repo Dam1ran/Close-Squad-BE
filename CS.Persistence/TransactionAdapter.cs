@@ -1,5 +1,5 @@
 using CS.Application.Persistence.Abstractions;
-using CS.Application.Utils;
+using CS.Application.Support.Utils;
 using Microsoft.EntityFrameworkCore.Storage;
 
 namespace CS.Persistence;

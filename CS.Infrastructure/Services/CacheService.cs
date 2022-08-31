@@ -1,6 +1,6 @@
 using System.Text.Json;
 using CS.Application.Services.Abstractions;
-using CS.Application.Utils;
+using CS.Application.Support.Utils;
 using Microsoft.Extensions.Caching.Distributed;
 
 namespace CS.Infrastructure.Services;
@@ -12,15 +12,15 @@ public class CacheService : ICacheService
     _distributedCache = Check.NotNull(distributedCache, nameof(distributedCache));
   }
 
-  public Task<string> GetStringAsync(string key, CancellationToken cancellationToken = default) {
-    Check.NotNullOrWhiteSpace(key, nameof(key));
-    return _distributedCache.GetStringAsync(key, cancellationToken);
-  }
+  private string ComposeKey(string groupKey, string key) =>
+    string.Concat(groupKey, "_[", key, "]");
 
-  public async Task<T?> GetAsync<T>(string key, CancellationToken cancellationToken = default) {
-    Check.NotNullOrWhiteSpace(key, nameof(key));
+  public async Task<string?> GetStringAsync(string groupKey, string key, CancellationToken cancellationToken = default) =>
+    await _distributedCache.GetStringAsync(ComposeKey(groupKey, key), cancellationToken);
 
-    var str = await _distributedCache.GetStringAsync(key, cancellationToken);
+  public async Task<T?> GetAsync<T>(string groupKey, string key, CancellationToken cancellationToken = default) {
+
+    var str = await _distributedCache.GetStringAsync(ComposeKey(groupKey, key), cancellationToken);
     if (string.IsNullOrWhiteSpace(str)) {
       return default;
     }
@@ -28,17 +28,20 @@ public class CacheService : ICacheService
     return JsonSerializer.Deserialize<T>(str);
   }
 
-  public Task SetStringAsync(string key,
-  string value, DateTimeOffset? absoluteExpiration = null,
-  TimeSpan? absoluteExpirationRelativeToNow = null,
-  TimeSpan? slidingExpiration = null,
-  CancellationToken cancellationToken = default)
+  public Task SetStringAsync(
+    string groupKey,
+    string key,
+    string value,
+    DateTimeOffset? absoluteExpiration = null,
+    TimeSpan? absoluteExpirationRelativeToNow = null,
+    TimeSpan? slidingExpiration = null,
+    CancellationToken cancellationToken = default)
   {
     Check.NotNullOrWhiteSpace(key, nameof(key));
     Check.NotNullOrWhiteSpace(value, nameof(value));
 
     return _distributedCache.SetStringAsync(
-      key,
+      ComposeKey(groupKey, key),
       value,
       new DistributedCacheEntryOptions {
         AbsoluteExpiration = absoluteExpiration,
@@ -49,6 +52,7 @@ public class CacheService : ICacheService
   }
 
   public Task SetAsync<T>(
+    string groupKey,
     string key,
     T value,
     DateTimeOffset? absoluteExpiration = null,
@@ -56,16 +60,12 @@ public class CacheService : ICacheService
     TimeSpan? slidingExpiration = null,
     CancellationToken cancellationToken = default)
   {
-    Check.NotNullOrWhiteSpace(key, nameof(key));
     Check.NotNull(value, nameof(value));
 
-    return SetStringAsync(key, JsonSerializer.Serialize(value), absoluteExpiration, absoluteExpirationRelativeToNow, slidingExpiration, cancellationToken);
+    return SetStringAsync(groupKey, key, JsonSerializer.Serialize(value), absoluteExpiration, absoluteExpirationRelativeToNow, slidingExpiration, cancellationToken);
   }
 
-  public Task RemoveAsync(string key, CancellationToken cancellationToken = default) {
-    Check.NotNullOrWhiteSpace(key, nameof(key));
-
-    return _distributedCache.RemoveAsync(key, cancellationToken);
-  }
+  public Task RemoveAsync(string groupKey, string key, CancellationToken cancellationToken = default) =>
+    _distributedCache.RemoveAsync(ComposeKey(groupKey, key), cancellationToken);
 
 }

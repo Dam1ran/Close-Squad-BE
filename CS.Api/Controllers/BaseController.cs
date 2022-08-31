@@ -1,4 +1,4 @@
-using CS.Application.Utils;
+using CS.Application.Support.Utils;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -13,4 +13,5 @@ public class BaseController : ControllerBase {
   public BaseController(IMediator mediator) {
     _mediator = Check.NotNull(mediator, nameof(mediator));
   }
+
 }

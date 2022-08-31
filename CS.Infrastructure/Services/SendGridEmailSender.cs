@@ -1,14 +1,15 @@
+using CS.Application.Models;
 using CS.Application.Options;
 using CS.Application.Options.Abstractions;
-using CS.Application.Utils;
+using CS.Application.Services.Abstractions;
+using CS.Application.Support.Utils;
 using CS.Infrastructure.Models;
-using CS.Infrastructure.Services.Abstractions;
 using Newtonsoft.Json;
 using SendGrid;
 using SendGrid.Helpers.Mail;
 
 namespace CS.Infrastructure.Services;
-public class SendGridEmailService : IEmailService{
+public class SendGridEmailService : IEmailService {
   private readonly SendGridOptions _sendGridOptions;
   private readonly SendEmailOptions _sendEmailOptions;
 
@@ -59,5 +60,7 @@ public class SendGridEmailService : IEmailService{
         Errors = new List<string>(new[] { "Unknown error occurred." })
       };
     }
+
   }
+
 }

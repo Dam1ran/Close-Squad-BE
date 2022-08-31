@@ -25,5 +25,10 @@ public static class OptionsServiceCollectionExtensions {
       .AddOptions<ExternalInfoOptions>()
       .BindConfiguration(ExternalInfoOptions.ExternalInfo)
       .ValidateDataAnnotations()
+      .Services
+      .AddOptions<RefreshTokenOptions>()
+      .BindConfiguration(RefreshTokenOptions.RefreshToken)
+      .ValidateDataAnnotations()
       .Services.AddSingleton(typeof(IOptions<>), typeof(OptionsAdapter<>));
+
 }

@@ -1,4 +1,4 @@
-using CS.Application.Exceptions;
+using CS.Core.Exceptions;
 using CS.Core.Services.Interfaces;
 using Microsoft.Extensions.Logging;
 namespace CS.Application;

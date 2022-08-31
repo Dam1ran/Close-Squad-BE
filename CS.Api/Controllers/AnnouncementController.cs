@@ -1,6 +1,6 @@
 using CS.Api.Support.Attributes;
 using CS.Api.Support.Models;
-using CS.Application.Models;
+using CS.Application.DataTransferObjects;
 using CS.Application.Queries.Announcement;
 using CS.Core.Support;
 using MediatR;
@@ -20,7 +20,7 @@ public class AnnouncementController : BaseController {
   public Task<IEnumerable<ServerAnnouncementDto>> Get(CancellationToken cancellationToken) =>
     _mediator.Send(new GetServerAnnouncementsQuery(), cancellationToken);
 
-  [HttpPost] // admin and GM only
+  [HttpPost] // ADM and GMA only
   [LimitRequests(TimeWindowInSeconds = Core_TimeConstants._5_Minutes_InSeconds, MaxRequests = 1, By = LimitRequestsType.RoleAndEndpoint)]
   [ProducesDefaultResponseType]
   [ProducesResponseType(typeof(ServerAnnouncementDto), StatusCodes.Status200OK)]

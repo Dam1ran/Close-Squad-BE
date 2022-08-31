@@ -1,28 +1,30 @@
 using System.Net;
-using System.Security.Claims;
 using CS.Api.Services.Abstractions;
 using CS.Api.Support.Attributes;
 using CS.Api.Support.Exceptions;
 using CS.Api.Support.Models;
 using CS.Application.Extensions;
-using CS.Application.Utils;
+using CS.Application.Services.Abstractions;
+using CS.Application.Support.Constants;
+using CS.Application.Support.Utils;
+using CS.Core.ValueObjects;
 
 namespace CS.Api.Support.Middleware;
 public class CaptchaInquiry {
   private readonly RequestDelegate _next;
   private readonly ILogger<CaptchaInquiry> _logger;
   private readonly ICachedUserService _cachedUserService;
-  private readonly ICaptchaCacheService _captchaCacheService;
+  private readonly ICacheService _cacheService;
 
   public CaptchaInquiry(
     RequestDelegate next,
     ILogger<CaptchaInquiry> logger,
     ICachedUserService cachedUserService,
-    ICaptchaCacheService captchaCacheService) {
+    ICacheService cacheService) {
     _next = Check.NotNull(next, nameof(next));
     _logger = Check.NotNull(logger, nameof(logger));
     _cachedUserService = Check.NotNull(cachedUserService, nameof(cachedUserService));
-    _captchaCacheService = Check.NotNull(captchaCacheService, nameof(captchaCacheService));
+    _cacheService = Check.NotNull(cacheService, nameof(cacheService));
   }
 
   public async Task InvokeAsync(HttpContext httpContext) {
@@ -42,7 +44,7 @@ public class CaptchaInquiry {
 
     CachedUser? cachedUser = null;
     if (!isNicknameMissing) {
-      cachedUser = await _cachedUserService.GetByNicknameAsync(nickname, httpContext.RequestAborted);
+      cachedUser = await _cachedUserService.GetByNicknameAsync(new Nickname(nickname), httpContext.RequestAborted);
     }
 
     var userHasToCheckCaptcha = IsCheckUserCaptcha(cachedUser);
@@ -69,7 +71,7 @@ public class CaptchaInquiry {
       return;
     }
 
-    var cachedCaptcha = await _captchaCacheService.GetAsync(clientIdGuid, httpContext.RequestAborted);
+    var cachedCaptcha = await _cacheService.GetAsync<CachedCaptcha>(CacheGroupKeyConstants.Captcha, clientIdGuid, httpContext.RequestAborted);
     if (cachedCaptcha is null) {
       httpContext.Response.StatusCode = (int)HttpStatusCode.BadRequest;
       await httpContext.Response.WriteAsJsonAsync(new ErrorDetails { Code = "CaptchaExpired", Description = "Captcha has been expired." });
@@ -77,8 +79,10 @@ public class CaptchaInquiry {
     }
 
     if (cachedCaptcha.Attempts >= (checkCaptchaAttribute?.MaxAllowedAttempts ?? CheckCaptcha.DefaultMaxAllowedAttempts)) {
-      await _captchaCacheService.SetAsync(clientIdGuid, cachedCaptcha, httpContext.RequestAborted);
-      if (IsClientIpMissing(httpContext, out string clientIp)) {
+      await SetCaptcha(clientIdGuid, cachedCaptcha, httpContext);
+
+      if (IsClientIpMissing(httpContext, out string clientIp))
+      {
         _logger.LogWarning("Created empty captcha check IP key.");
       }
       var description = "Too many attempts to validate same captcha.";
@@ -91,7 +95,8 @@ public class CaptchaInquiry {
     // if (!captchaCode.Equals(cachedCaptcha.Keycode, StringComparison.InvariantCultureIgnoreCase)) {
     if (!captchaCode.EqualsExceptNCharacters(cachedCaptcha.Keycode, 1)) {
       cachedCaptcha.Attempts++;
-      await _captchaCacheService.SetAsync(clientIdGuid, cachedCaptcha, httpContext.RequestAborted);
+      await SetCaptcha(clientIdGuid, cachedCaptcha, httpContext);
+
       httpContext.Response.StatusCode = (int)HttpStatusCode.BadRequest;
       await httpContext.Response.WriteAsJsonAsync(new ErrorDetails { Code = "WrongCaptcha", Description = "Captcha codes does not match." });
       return;
@@ -99,14 +104,14 @@ public class CaptchaInquiry {
 
     if (httpContext.Request.Method != HttpMethod.Patch.Method || !"/captcha".Equals(httpContext.Request.Path, StringComparison.InvariantCultureIgnoreCase)) {
       httpContext.Session.Remove(Api_Constants.ClientIdKey);
-      await _captchaCacheService.RemoveAsync(clientIdGuid, httpContext.RequestAborted);
+      await _cacheService.RemoveAsync(CacheGroupKeyConstants.Captcha, clientIdGuid, httpContext.RequestAborted);
 
       if (isCaptchaAttributeNull && cachedUser is not null) {
         cachedUser.CheckCaptcha = false;
-        var updateResult = await _cachedUserService.UpdateAsync(nickname, cachedUser, httpContext.RequestAborted);
-        if (!updateResult.Succeeded) {
-          foreach (var error in updateResult.Errors) {
-            throw new MiddlewareException(nameof(CaptchaInquiry), $"Code: [{error.Code}] Description: {error.Description}");
+        var updateResult = await _cachedUserService.UpdateAsync(new Nickname(nickname), cachedUser, httpContext.RequestAborted);
+        if (!updateResult.Successful) {
+          foreach (var error in updateResult.ErrorDetails) {
+            throw new MiddlewareException(nameof(CaptchaInquiry), $"Code: [{error.Key}] Description: {error.Value}");
           }
         }
       }
@@ -116,11 +121,22 @@ public class CaptchaInquiry {
     await _next(httpContext);
   }
 
+  private async Task SetCaptcha(string clientIdGuid, CachedCaptcha cachedCaptcha, HttpContext httpContext) =>
+    await _cacheService
+      .SetAsync(
+        CacheGroupKeyConstants.Captcha,
+        clientIdGuid,
+        cachedCaptcha,
+        absoluteExpirationRelativeToNow: TimeSpan.FromMinutes(1),
+        cancellationToken: httpContext.RequestAborted);
+
+
   private bool IsCheckUserCaptcha(CachedUser? cachedUser) {
     return cachedUser?.CheckCaptcha ?? false;
   }
   private bool IsNicknameMissing(HttpContext httpContext, out string nickname) {
     nickname = string.Empty; // TODO
+    nickname = "Mime"; // TODO
     // if (httpContext.User.Identity is ClaimsIdentity identity) {
     //   // nickname = identity.FindFirst(ClaimTypes.Email)!.Value;
     // }

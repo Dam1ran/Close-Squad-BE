@@ -1,6 +1,6 @@
 using CS.Api.Support;
 using CS.Api.Support.Attributes;
-using CS.Application.Utils;
+using CS.Application.Support.Utils;
 using CS.Core.Support;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authorization;
@@ -36,4 +36,5 @@ public class AntiforgeryController : ControllerBase {
 
     return NoContent();
   }
+
 }

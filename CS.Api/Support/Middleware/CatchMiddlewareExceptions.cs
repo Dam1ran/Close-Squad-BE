@@ -1,9 +1,10 @@
 using System.Net;
 using CS.Api.Support.Exceptions;
-using CS.Application.Utils;
+using CS.Application.Support.Utils;
 
 namespace CS.Api.Support.Middleware;
 public class CatchMiddlewareExceptions {
+
   private readonly RequestDelegate _next;
   private readonly ILogger<CatchMiddlewareExceptions> _logger;
 
@@ -23,4 +24,5 @@ public class CatchMiddlewareExceptions {
       context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
     }
   }
+
 }

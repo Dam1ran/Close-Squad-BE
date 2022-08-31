@@ -1,9 +1,12 @@
 using CS.Core.Entities;
+using CS.Core.Entities.Auth;
+using Microsoft.EntityFrameworkCore;
 
 namespace CS.Application.Persistence.Abstractions;
 public interface IContext {
-  IRepository<ServerAnnouncement> Announcements { get; }
-  IRepository<Character> Characters { get; }
+  public DbSet<CsUser> CsUsers { get; set; }
+  public DbSet<ServerAnnouncement> ServerAnnouncements { get; set; }
+
   bool HasActiveTransaction { get; }
   ITransaction? CurrentTransaction { get; }
 
@@ -12,4 +15,5 @@ public interface IContext {
   Task RollbackTransactionAsync();
   int SaveChanges();
   Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
+
 }

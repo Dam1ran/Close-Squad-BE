@@ -1,9 +1,9 @@
-using CS.Application.Models;
+using CS.Application.DataTransferObjects;
 using CS.Application.Persistence.Abstractions;
 using CS.Application.Queries.Abstractions;
-using CS.Application.Specifications;
-using CS.Application.Utils;
+using CS.Application.Support.Utils;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace CS.Application.Queries.Announcement;
@@ -17,8 +17,14 @@ public class GetServerAnnouncementsQueryHandler : QueryHandler<GetServerAnnounce
   }
 
   public async override Task<IEnumerable<ServerAnnouncementDto>> Handle(GetServerAnnouncementsQuery request, CancellationToken cancellationToken) {
-    var announcements = await _context.Announcements.ListAsync(ServerAnnouncementSpecification.FreshFive(), cancellationToken);
+    var announcements = await _context
+      .ServerAnnouncements
+        .OrderByDescending(a => a.CreatedAt)
+        .Take(5)
+        .AsNoTracking()
+        .ToListAsync(cancellationToken);
 
     return announcements.Select(AnnouncementExtensionMethods.MapToDto);
   }
+
 }

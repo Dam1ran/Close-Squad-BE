@@ -1,4 +1,4 @@
-using CS.Application.Utils;
+using CS.Application.Support.Utils;
 using MediatR;
 using Microsoft.Extensions.Logging;
 

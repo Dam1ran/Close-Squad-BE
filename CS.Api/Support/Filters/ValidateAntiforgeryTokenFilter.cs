@@ -1,11 +1,10 @@
-using CS.Application.Utils;
+using CS.Application.Support.Utils;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 
 namespace CS.Api.Support.Filters;
-
 public class ValidateAntiforgeryTokenFilter : IAsyncAuthorizationFilter, IAntiforgeryPolicy {
   private readonly IAntiforgery _antiforgery;
   private readonly ILogger<ValidateAntiforgeryTokenFilter> _logger;
@@ -30,4 +29,5 @@ public class ValidateAntiforgeryTokenFilter : IAsyncAuthorizationFilter, IAntifo
       _logger.LogWarning(e.InnerException?.Message);
     }
   }
+
 }

@@ -1,25 +1,28 @@
 using System.Net;
-using System.Security.Claims;
-using CS.Api.Services.Abstractions;
 using CS.Api.Support.Attributes;
 using CS.Api.Support.Exceptions;
-using CS.Api.Support.Models;
 using CS.Api.Support.Models.Abstractions;
-using CS.Application.Utils;
+using CS.Application.Services.Abstractions;
+using CS.Application.Support.Constants;
+using CS.Application.Support.Utils;
 
 namespace CS.Api.Support.Middleware;
 public class AttributeRateLimiting {
   private readonly RequestDelegate _next;
+  private readonly ICacheService _cacheService;
   private readonly ILogger<AttributeRateLimiting> _logger;
 
-  public AttributeRateLimiting(RequestDelegate next, ILogger<AttributeRateLimiting> logger) {
+  public AttributeRateLimiting(
+    RequestDelegate next,
+    ICacheService cacheService,
+    ILogger<AttributeRateLimiting> logger) {
     _next = Check.NotNull(next, nameof(next));
+    _cacheService = Check.NotNull(cacheService, nameof(cacheService));
     _logger = Check.NotNull(logger, nameof(logger));
   }
 
-  public async Task InvokeAsync(HttpContext httpContext, IStatisticsCacheService<ClientStatistics> cacheService) {
+  public async Task InvokeAsync(HttpContext httpContext) {
     Check.NotNull(httpContext, nameof(httpContext));
-    Check.NotNull(cacheService, nameof(cacheService));
 
     var limitRequests = httpContext.GetEndpoint()?.Metadata.GetMetadata<LimitRequests>();
     if (limitRequests is null || IsGameMaster(httpContext)) {
@@ -52,34 +55,39 @@ public class AttributeRateLimiting {
         key = ComposeClientStatisticsKey(clientRole, GetEndpoint(httpContext));
         break;
       }
-      case LimitRequestsType.EmailCredentialAndEndpoint : {
-        var clientEmail = GetClientEmail(httpContext);
-        if (string.IsNullOrEmpty(clientEmail)) {
+      case LimitRequestsType.NicknameCredentialAndEndpoint : {
+        var nickname = GetClientNickname(httpContext);
+        if (string.IsNullOrEmpty(nickname)) {
           httpContext.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
           return;
         }
-        key = ComposeClientStatisticsKey(clientEmail, GetEndpoint(httpContext));
+        key = ComposeClientStatisticsKey(nickname, GetEndpoint(httpContext));
         break;
       }
       default: throw new MiddlewareException(nameof(AttributeRateLimiting), $"Case not defined for {nameof(LimitRequestsType)}.{limitRequests.By}.");
     }
 
-    var existingWrapper = await cacheService.GetAsync(key, httpContext.RequestAborted);
-    if (existingWrapper?.Entity is not null) {
-      if (existingWrapper.Entity.NumberOfRequests >= limitRequests.MaxRequests) {
+    var statistics = await _cacheService.GetAsync<StatisticsEntity>(CacheGroupKeyConstants.AttributeRateLimiting, key, httpContext.RequestAborted);
+    if (statistics is not null) {
+      if (statistics.NumberOfRequests >= limitRequests.MaxRequests) {
         httpContext.Response.StatusCode = (int)HttpStatusCode.TooManyRequests;
         return;
       }
 
-      existingWrapper.Entity.NumberOfRequests++;
+      statistics.NumberOfRequests++;
     }
 
-    await cacheService.SetAsync(
+    var expiresAt = DateTimeOffset.UtcNow.AddSeconds(limitRequests.TimeWindowInSeconds);
+    var saveStatistics = statistics ?? new StatisticsEntity(1, expiresAt);
+    await _cacheService.SetAsync(
+      CacheGroupKeyConstants.AttributeRateLimiting,
       key,
-      existingWrapper ?? StatisticsEntityWrapper<ClientStatistics>.FromEntity(new (1), DateTimeOffset.UtcNow.AddSeconds(limitRequests.TimeWindowInSeconds)),
+      saveStatistics,
+      absoluteExpiration: saveStatistics.ExpiresAt,
       cancellationToken: httpContext.RequestAborted);
 
     await _next(httpContext);
+
   }
 
   private bool IsGameMaster(HttpContext httpContext) {
@@ -94,7 +102,7 @@ public class AttributeRateLimiting {
   private string GetClientRole(HttpContext httpContext) {
     return string.Empty; // TODO
   }
-  private string GetClientEmail(HttpContext httpContext) {
+  private string GetClientNickname(HttpContext httpContext) {
     // var typeKey = string.Empty;
     // if (httpContext.User.Identity is ClaimsIdentity identity) {
     //   email = identity.FindFirst(ClaimTypes.Email).Value;
