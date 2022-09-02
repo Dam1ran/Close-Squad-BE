@@ -1,6 +1,7 @@
 namespace CS.Core.Support;
 public static class Core_TimeConstants {
 
+  public const int _30_Minutes_InSeconds = 1800;
   public const int _20_Minutes_InSeconds = 1200;
   public const int _15_Minutes_InSeconds = 900;
   public const int _10_Minutes_InSeconds = 600;

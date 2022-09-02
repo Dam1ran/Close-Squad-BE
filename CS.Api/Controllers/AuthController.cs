@@ -101,7 +101,7 @@ public class AuthController : ControllerBase {
   [LimitRequests(TimeWindowInSeconds = Core_TimeConstants._15_Minutes_InSeconds, MaxRequests = 5, By = LimitRequestsType.IpAndEndpoint)]
   [HttpPost("login")]
   [ProducesDefaultResponseType]
-  [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
+  [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
   [ProducesResponseType(StatusCodes.Status400BadRequest)]
   public async Task<IActionResult> Login([FromBody] UserLoginDto userLoginDto, CancellationToken cancellationToken) {
     var loginResponse = await _userManager
@@ -111,6 +111,7 @@ public class AuthController : ControllerBase {
         cancellationToken);
 
     if (!loginResponse.Successful) {
+
       var (code, description) = loginResponse.ErrorDetails.First();
 
       if (loginResponse.IntegerData.HasValue) {
@@ -121,6 +122,7 @@ public class AuthController : ControllerBase {
     }
 
     var cookieOptions = new CookieOptions {
+      SameSite = SameSiteMode.None,
       HttpOnly = true,
       Expires = loginResponse.RefreshToken!.ExpiresAt,
       IsEssential = true,
@@ -134,8 +136,32 @@ public class AuthController : ControllerBase {
 
   }
 
-  // refresh token
+  [AllowAnonymous]
+  [LimitRequests(TimeWindowInSeconds = Core_TimeConstants._30_Minutes_InSeconds, MaxRequests = 3, By = LimitRequestsType.IpAndEndpoint)]
+  [CheckCaptcha]
+  [HttpPost("send-change-password")]
+  [ProducesDefaultResponseType]
+  [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
+  [ProducesResponseType(StatusCodes.Status400BadRequest)]
+  public async Task<IActionResult> SendChangePasswordEmail([FromBody] ChangePasswordDto changePasswordDto, CancellationToken cancellationToken) {
+    var response = await _userManager
+      .SendChangePasswordEmail(
+        new Email(changePasswordDto.Email),
+        cancellationToken);
+
+    if (!response.Successful) {
+
+      var (code, description) = response.ErrorDetails.First();
+      return BadRequest(new ErrorDetails { Code = code, Description = description });
+
+    }
+
+    return Ok("Change password email sent to specified address.");
+
+  }
+
   // change password
+  // refresh token
   // logout
 
 }

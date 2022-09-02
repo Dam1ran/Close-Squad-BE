@@ -39,4 +39,27 @@ public class TemplatedEmailService : ITemplatedEmailService {
 
   }
 
+  public async Task<SendEmailResponse> SendResetPasswordAsync(string email, string userName, string confirmationLink) {
+
+    var templateText = default(string);
+    using (var reader =
+      new StreamReader(
+        Assembly.GetExecutingAssembly()?.GetManifestResourceStream("CS.Infrastructure.Support.Email.ResetPasswordEmailTemplate.html")!, Encoding.UTF8)) {
+      templateText = await reader.ReadToEndAsync();
+    }
+    templateText = templateText
+      .Replace("--UserName--", userName)
+      .Replace("--ConfirmationButtonLink--", confirmationLink)
+      .Replace("--WebSiteLink--", _externalInfoOptions.WebSiteLink);
+
+    return await _emailService.SendAsync(new EmailDetails() {
+      ToName = userName,
+      ToEmail = email,
+      Subject = "Change password request",
+      IsHTML = true,
+      Content = templateText
+    });
+
+  }
+
 }

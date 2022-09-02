@@ -39,7 +39,7 @@ public class Verification : Entity {
   /// </summary>
   /// <returns>TimeSpan difference between previous and current method call.</returns>
   public TimeSpan SetLoginDateTimeAndGetInterval() {
-    var difference = DateTimeOffset.UtcNow - LastLoginAt;
+    var difference = LastLoginAt - DateTimeOffset.UtcNow;
     LastLoginAt = DateTimeOffset.UtcNow;
     return difference;
   }

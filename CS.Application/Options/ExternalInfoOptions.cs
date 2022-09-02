@@ -9,4 +9,8 @@ public class ExternalInfoOptions {
 
   [Required(AllowEmptyStrings = false)]
   public string ConfirmAddressLink { get; set; } = string.Empty;
+
+  [Required(AllowEmptyStrings = false)]
+  public string ChangePasswordLink { get; set; } = string.Empty;
+
 }

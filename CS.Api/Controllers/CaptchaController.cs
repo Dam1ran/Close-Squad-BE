@@ -24,7 +24,7 @@ public class CaptchaController : ControllerBase {
 
   [AllowAnonymous]
   [SkipCaptchaCheck]
-  [LimitRequests(TimeWindowInSeconds = Core_TimeConstants._10_Minutes_InSeconds, MaxRequests = 5, By = LimitRequestsType.IpAndEndpoint)]
+  [LimitRequests(TimeWindowInSeconds = Core_TimeConstants._10_Minutes_InSeconds, MaxRequests = 10, By = LimitRequestsType.IpAndEndpoint)]
   [HttpGet]
   [ProducesDefaultResponseType]
   [ProducesResponseType(typeof(FileStreamResult), StatusCodes.Status200OK)]
@@ -46,7 +46,7 @@ public class CaptchaController : ControllerBase {
   }
 
   [AllowAnonymous]
-  [LimitRequests(TimeWindowInSeconds = Core_TimeConstants._10_Minutes_InSeconds, MaxRequests = 5, By = LimitRequestsType.IpAndEndpoint)]
+  [LimitRequests(TimeWindowInSeconds = Core_TimeConstants._10_Minutes_InSeconds, MaxRequests = 10, By = LimitRequestsType.IpAndEndpoint)]
   [CheckCaptcha]
   [HttpPatch]
   [ProducesDefaultResponseType]

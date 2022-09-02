@@ -13,6 +13,7 @@ using Microsoft.Extensions.Logging;
 namespace CS.Application.Services.Implementations;
 public class UserManager : IUserManager {
   public const int ProtectionTokenExpirationMinutes = 60;
+  public const int ProtectionChangePasswordTokenExpirationMinutes = 10;
 
   private readonly ExternalInfoOptions _externalInfoOptions;
   private readonly ICsUserRepository _csUserRepo;
@@ -221,6 +222,41 @@ public class UserManager : IUserManager {
 
     return response;
 
+  }
+
+  public async Task<UserManagerResponse> SendChangePasswordEmail(Email email, CancellationToken cancellationToken) {
+    var csUser = await _csUserRepo.FindByEmailAsNoTrackingAsync(email, cancellationToken);
+    if (csUser is null || csUser.Verification.Banned) {
+      return UserManagerResponse.Failed("WrongCredentials", "Wrong credentials provided.");
+    }
+
+    var sendEmailResponse = await _templatedEmailService
+      .SendResetPasswordAsync(
+        csUser.Verification.Email.Value,
+        csUser.Nickname.Value,
+        CreateChangePasswordLink(csUser.Nickname));
+
+    if (!sendEmailResponse.Successful) {
+      foreach(var err in sendEmailResponse.Errors) {
+        _logger.LogWarning($"Email confirmation error: {err}");
+      }
+
+      return UserManagerResponse.Failed("SendEmailFailed", "Failed to send email.");
+
+    }
+
+    return UserManagerResponse.Succeeded();
+
+  }
+
+  private string CreateChangePasswordLink(Nickname nickname) {
+    var protectedUserNickname =
+      _csTimeLimitedDataProtector
+        .ProtectNickname(
+          nickname,
+          TimeSpan.FromMinutes(ProtectionChangePasswordTokenExpirationMinutes));
+
+    return $"{_externalInfoOptions.ChangePasswordLink}?guid={protectedUserNickname}";
   }
 
   // public async Task<string> CacheAndGetIdentificationToken(Nickname nickname, CancellationToken cancellationToken) {
