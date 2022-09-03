@@ -8,14 +8,15 @@ public class Identification : Entity {
   protected Identification() { }
   #nullable restore
   public Identification(Password password) {
-    IdentificationPassword = new (password);
+    SetIdentificationPassword(password);
   }
   public string Role { get; private set; } = UserRole.USR.ToString();
-  public IdentificationPassword IdentificationPassword { get; private set; }
+  public IdentificationPassword IdentificationPassword { get; private set; } = null!;
   public IdentificationRefreshToken? IdentificationRefreshToken { get; set; } = null;
 
   public void SetRole(UserRole userRole) => Role = userRole.ToString();
   public void SetRefreshToken(IdentificationRefreshToken identificationRefreshToken) => IdentificationRefreshToken = identificationRefreshToken;
   public void ClearRefreshToken() => IdentificationRefreshToken = null;
+  public void SetIdentificationPassword(Password password) => IdentificationPassword = new (password);
 
 }

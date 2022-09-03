@@ -1,8 +1,10 @@
 using CS.Core.Extensions;
 
-namespace CS.Api.Support.Models.Abstractions;
+namespace CS.Api.Support.Models;
 public class StatisticsEntity {
+
   protected StatisticsEntity() {}
+
   public StatisticsEntity(int numberOfRequests, DateTimeOffset expiresAt) {
     if (!expiresAt.IsInFuture()) {
       throw new ArgumentException($"{nameof(expiresAt)} cannot be in the past");

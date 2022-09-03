@@ -3,6 +3,9 @@ token middleware
 refresh token endpoint, infra and setups
 check cs role
 
+/// push VI
+
+change password endpoints addons
 
 /// push V
 

@@ -1,4 +1,4 @@
-using System.Text;
+// using System.Text;
 using CS.Api.Communications;
 using CS.Api.Services;
 using CS.Api.Support;
@@ -6,10 +6,8 @@ using CS.Api.Support.Filters;
 using CS.Application;
 using CS.Core.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc.ApplicationModels;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
-using CS.Core.Entities.Auth;
-using Microsoft.AspNetCore.Identity;
+// using Microsoft.AspNetCore.Authentication.JwtBearer;
+// using Microsoft.IdentityModel.Tokens;
 using CS.Persistence;
 using Microsoft.EntityFrameworkCore;
 using CS.Application.Persistence.Abstractions;
@@ -23,13 +21,13 @@ using CS.Api.Services.Abstractions;
 using CS.Api.Support.Other;
 using CS.Api.Support.Extensions;
 using CS.Application.Services.Implementations;
+// using CS.Application.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddRouting(options => options.LowercaseUrls = true);
 
-// JwtConfig jwtConfig = new ();
-// builder.Configuration.GetSection("JwtConfig").Bind(jwtConfig);
+// var jwtOption = builder.Configuration.GetSection(JwtOptions.Jwt).Get<JwtOptions>();
 // builder.Services.AddAuthentication(opt => {
 //       opt.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
 //       opt.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -39,9 +37,9 @@ builder.Services.AddRouting(options => options.LowercaseUrls = true);
 //         ValidateAudience = true,
 //         ValidateLifetime = true,
 //         ValidateIssuerSigningKey = true,
-//         ValidIssuer = jwtConfig.ValidIssuer,
-//         ValidAudience = jwtConfig.ValidAudience,
-//         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtConfig.Secret))
+//         ValidIssuer = jwtOption.ValidIssuer,
+//         ValidAudience = jwtOption.ValidAudience,
+//         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOption.Secret))
 //       };
 //   });
 

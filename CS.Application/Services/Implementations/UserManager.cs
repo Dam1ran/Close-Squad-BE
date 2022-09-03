@@ -259,6 +259,37 @@ public class UserManager : IUserManager {
     return $"{_externalInfoOptions.ChangePasswordLink}?guid={protectedUserNickname}";
   }
 
+  public async Task<UserManagerResponse> ChangePassword(string guid, Password password, CancellationToken cancellationToken) {
+
+    var nickname = _csTimeLimitedDataProtector.UnprotectNickname(guid, out bool expired);
+    if (expired) {
+      return UserManagerResponse.Failed("TokenExpired", "Change password link expired.");
+    }
+
+    var wrongDataResponse = UserManagerResponse.Failed("WrongData", "Provided data did not yeld any result.");
+    if (nickname is null) {
+      return wrongDataResponse;
+    }
+
+    var csUser = await _csUserRepo.FindByNicknameWithVerificationAndIdentificationPasswordAsync(nickname, cancellationToken);
+    if (csUser is null || csUser.Verification.Banned) {
+      return wrongDataResponse;
+    }
+
+    if (csUser.Identification.IdentificationPassword.CheckPassword(password)) {
+      return UserManagerResponse.Failed("SamePassword", "Password must be different than previous one.");
+    }
+
+    csUser.Identification.SetIdentificationPassword(password);
+
+    await _csUserRepo.SaveChangesAsync(cancellationToken);
+
+    return UserManagerResponse.Succeeded();
+
+  }
+
+
+
   // public async Task<string> CacheAndGetIdentificationToken(Nickname nickname, CancellationToken cancellationToken) {
   //   // CsUser csUser =
   //   //   await _csUserRepo.FindByEmailWithIdentificationAsNoTrackingAsync(email, cancellationToken)

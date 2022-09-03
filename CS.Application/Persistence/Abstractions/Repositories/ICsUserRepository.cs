@@ -6,6 +6,7 @@ public interface ICsUserRepository: IRepository {
 
   public Task<bool> AnyByNicknameAsNoTrackingAsync(Nickname nickname, CancellationToken cancellationToken);
   public Task<CsUser?> FindByNicknameWithVerificationAsync(Nickname nickname, CancellationToken cancellationToken);
+  public Task<CsUser?> FindByNicknameWithVerificationAndIdentificationPasswordAsync(Nickname nickname, CancellationToken cancellationToken);
   public Task<CsUser?> FindByNicknameWithVerificationAsNoTrackingAsync(Nickname nickname, CancellationToken cancellationToken);
 
   public Task<bool> AnyByEmailAsNoTrackingAsync(Email email, CancellationToken cancellationToken);

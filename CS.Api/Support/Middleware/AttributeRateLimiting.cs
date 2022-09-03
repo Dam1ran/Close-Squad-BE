@@ -1,7 +1,7 @@
 using System.Net;
 using CS.Api.Support.Attributes;
 using CS.Api.Support.Exceptions;
-using CS.Api.Support.Models.Abstractions;
+using CS.Api.Support.Models;
 using CS.Application.Services.Abstractions;
 using CS.Application.Support.Constants;
 using CS.Application.Support.Utils;

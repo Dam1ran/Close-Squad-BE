@@ -143,7 +143,7 @@ public class AuthController : ControllerBase {
   [ProducesDefaultResponseType]
   [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
   [ProducesResponseType(StatusCodes.Status400BadRequest)]
-  public async Task<IActionResult> SendChangePasswordEmail([FromBody] ChangePasswordDto changePasswordDto, CancellationToken cancellationToken) {
+  public async Task<IActionResult> SendChangePasswordEmail([FromBody] ChangePasswordEmailDto changePasswordDto, CancellationToken cancellationToken) {
     var response = await _userManager
       .SendChangePasswordEmail(
         new Email(changePasswordDto.Email),
@@ -160,7 +160,31 @@ public class AuthController : ControllerBase {
 
   }
 
-  // change password
+  [AllowAnonymous]
+  [LimitRequests(TimeWindowInSeconds = Core_TimeConstants._30_Minutes_InSeconds, MaxRequests = 3, By = LimitRequestsType.IpAndEndpoint)]
+  [CheckCaptcha]
+  [HttpPost("change-password")]
+  [ProducesDefaultResponseType]
+  [ProducesResponseType(StatusCodes.Status204NoContent)]
+  [ProducesResponseType(StatusCodes.Status400BadRequest)]
+  public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto changePasswordDto, CancellationToken cancellationToken) {
+    var response = await _userManager
+      .ChangePassword(
+        changePasswordDto.Guid,
+        new Password(changePasswordDto.Password),
+        cancellationToken);
+
+    if (!response.Successful) {
+
+      var (code, description) = response.ErrorDetails.First();
+      return BadRequest(new ErrorDetails { Code = code, Description = description });
+
+    }
+
+    return NoContent();
+
+  }
+
   // refresh token
   // logout
 

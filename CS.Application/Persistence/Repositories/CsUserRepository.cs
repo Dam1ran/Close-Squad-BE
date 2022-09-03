@@ -19,6 +19,12 @@ public class CsUserRepository : Repository, ICsUserRepository {
   public async Task<CsUser?> FindByNicknameWithVerificationAsync(Nickname nickname, CancellationToken cancellationToken) =>
     await ByNickname(nickname).Include(csu => csu.Verification).SingleOrDefaultAsync(cancellationToken);
 
+  public async Task<CsUser?> FindByNicknameWithVerificationAndIdentificationPasswordAsync(Nickname nickname, CancellationToken cancellationToken) =>
+    await ByNickname(nickname)
+      .Include(csu => csu.Verification)
+      .Include(csu => csu.Identification.IdentificationPassword)
+      .SingleOrDefaultAsync(cancellationToken);
+
   public async Task<CsUser?> FindByNicknameWithVerificationAsNoTrackingAsync(Nickname nickname, CancellationToken cancellationToken) =>
     await ByNickname(nickname).Include(csu => csu.Verification).AsNoTracking().SingleOrDefaultAsync(cancellationToken);
 

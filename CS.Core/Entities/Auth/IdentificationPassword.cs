@@ -26,8 +26,8 @@ public class IdentificationPassword : Entity {
   public DateTimeOffset LockoutEndsAt { get; private set; } = DateTimeOffset.UtcNow;
 
   public bool CheckPasswordAndRecordAttempt(Password password) {
-    using var hmac = new HMACSHA512(Salt);
 
+    using var hmac = new HMACSHA512(Salt);
     var computedHash = hmac.ComputeHash(Encoding.UTF8.GetBytes(password.Value));
     var isEqual = computedHash.SequenceEqual(Hash);
     if (!isEqual) {
@@ -35,6 +35,14 @@ public class IdentificationPassword : Entity {
     }
 
     return isEqual;
+  }
+
+  public bool CheckPassword(Password password) {
+
+    using var hmac = new HMACSHA512(Salt);
+    var computedHash = hmac.ComputeHash(Encoding.UTF8.GetBytes(password.Value));
+
+    return computedHash.SequenceEqual(Hash);
   }
 
   public void RecordAttempt() {
