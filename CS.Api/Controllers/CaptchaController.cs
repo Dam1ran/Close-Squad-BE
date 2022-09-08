@@ -12,6 +12,7 @@ namespace CS.Api.Controllers;
 [ApiController]
 [Route("[controller]")]
 [ApiExplorerSettings(GroupName = "v1")]
+[IgnoreAntiforgeryToken]
 public class CaptchaController : ControllerBase {
 
   private readonly ICaptchaService _captchaService;
@@ -24,7 +25,7 @@ public class CaptchaController : ControllerBase {
 
   [AllowAnonymous]
   [SkipCaptchaCheck]
-  [LimitRequests(TimeWindowInSeconds = Core_TimeConstants._10_Minutes_InSeconds, MaxRequests = 10, By = LimitRequestsType.IpAndEndpoint)]
+  [LimitRequests(TimeWindowInSeconds = Core_TimeConstants._10_Minutes_InSeconds, MaxRequests = 15, By = LimitRequestsType.IpAndEndpoint)]
   [HttpGet]
   [ProducesDefaultResponseType]
   [ProducesResponseType(typeof(FileStreamResult), StatusCodes.Status200OK)]

@@ -19,4 +19,9 @@ public class IdentificationRefreshToken : Entity {
   public string RefreshToken { get; private set; } = string.Empty;
   public DateTimeOffset ExpiresAt { get; private set; } = DateTimeOffset.UtcNow;
 
+  public void Clear() {
+    RefreshToken = string.Empty;
+    ExpiresAt = DateTimeOffset.MinValue;
+  }
+
 }

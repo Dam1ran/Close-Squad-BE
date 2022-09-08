@@ -7,11 +7,6 @@ public class IdentificationRefreshTokenConfiguration : EntityConfiguration<Ident
   public override string TableName => "IdentificationRefreshTokens";
   protected override string? Schema => "cs.auth";
 
-  public override void OnConfigure(EntityTypeBuilder<IdentificationRefreshToken> builder) {
-    builder
-      .Property(csu => csu.RefreshToken)
-      .HasMaxLength(128)
-      .IsRequired();
-  }
+  public override void OnConfigure(EntityTypeBuilder<IdentificationRefreshToken> builder) {}
 
 }

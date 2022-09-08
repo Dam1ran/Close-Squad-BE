@@ -1,3 +1,4 @@
+using CS.Api.Controllers.Abstractions;
 using CS.Api.Support.Attributes;
 using CS.Api.Support.Models;
 using CS.Application.DataTransferObjects;
@@ -11,7 +12,7 @@ namespace CS.Api.Controllers;
 public class AnnouncementController : BaseController {
   public AnnouncementController(IMediator mediator) : base(mediator) {}
 
-  [HttpGet]
+  [HttpGet("announcements")]
   [AllowAnonymous]
   [IgnoreAntiforgeryToken]
   [LimitRequests(TimeWindowInSeconds = Core_TimeConstants._1_Minute_InSeconds, MaxRequests = 6, By = LimitRequestsType.IpAndEndpoint)]
@@ -20,7 +21,7 @@ public class AnnouncementController : BaseController {
   public Task<IEnumerable<ServerAnnouncementDto>> Get(CancellationToken cancellationToken) =>
     _mediator.Send(new GetServerAnnouncementsQuery(), cancellationToken);
 
-  [HttpPost] // ADM and GMA only
+  [HttpPost("create")] // ADM and GMA only
   [LimitRequests(TimeWindowInSeconds = Core_TimeConstants._5_Minutes_InSeconds, MaxRequests = 1, By = LimitRequestsType.RoleAndEndpoint)]
   [ProducesDefaultResponseType]
   [ProducesResponseType(typeof(ServerAnnouncementDto), StatusCodes.Status200OK)]

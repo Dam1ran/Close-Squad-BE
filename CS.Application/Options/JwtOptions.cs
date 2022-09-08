@@ -16,4 +16,9 @@ public class JwtOptions {
   [Required]
   [Range(1, 60)]
   public int ExpiresInMinutes { get; set; }
+
+  [Required]
+  [Range(0, 300)]
+  public int ClockSkewSeconds { get; set; }
+
 }

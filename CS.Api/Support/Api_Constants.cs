@@ -6,5 +6,6 @@ public static class Api_Constants {
   public const string ContentType = "content-type";
   public const string ClientIdKey = "ClientId";
   public const string RefreshTokenCookieKey = "x-refresh-token";
+  public const string AuthorizationHeader = "Authorization";
 
 }

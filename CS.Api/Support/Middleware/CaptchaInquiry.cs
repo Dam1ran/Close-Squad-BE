@@ -1,4 +1,5 @@
 using System.Net;
+using System.Security.Claims;
 using CS.Api.Services.Abstractions;
 using CS.Api.Support.Attributes;
 using CS.Api.Support.Exceptions;
@@ -117,7 +118,6 @@ public class CaptchaInquiry {
       }
     }
 
-
     await _next(httpContext);
   }
 
@@ -135,11 +135,12 @@ public class CaptchaInquiry {
     return cachedUser?.CheckCaptcha ?? false;
   }
   private bool IsNicknameMissing(HttpContext httpContext, out string nickname) {
-    nickname = string.Empty; // TODO
-    nickname = "Mime"; // TODO
-    // if (httpContext.User.Identity is ClaimsIdentity identity) {
-    //   // nickname = identity.FindFirst(ClaimTypes.Email)!.Value;
-    // }
+    nickname = string.Empty;
+
+    if (httpContext.User.Identity is ClaimsIdentity identity) {
+      nickname = identity.FindFirst("nickname")?.Value ?? string.Empty;
+    }
+
     return string.IsNullOrWhiteSpace(nickname);
   }
 
@@ -147,6 +148,7 @@ public class CaptchaInquiry {
     captchaCode = httpContext.Request.Query["captcha"].ToString().Split(",")[0];
     return string.IsNullOrWhiteSpace(captchaCode);
   }
+
   private bool IsClientIpMissing(HttpContext httpContext, out string ip) {
     ip = $"{httpContext.Connection.RemoteIpAddress}";
     return string.IsNullOrWhiteSpace(ip);

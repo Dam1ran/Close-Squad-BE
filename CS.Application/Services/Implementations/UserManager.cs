@@ -5,8 +5,10 @@ using CS.Application.Options;
 using CS.Application.Options.Abstractions;
 using CS.Application.Persistence.Abstractions.Repositories;
 using CS.Application.Services.Abstractions;
+using CS.Application.Support.Constants;
 using CS.Application.Support.Utils;
 using CS.Core.Entities.Auth;
+using CS.Core.Extensions;
 using CS.Core.ValueObjects;
 using Microsoft.Extensions.Logging;
 
@@ -20,6 +22,7 @@ public class UserManager : IUserManager {
   private readonly ITemplatedEmailService _templatedEmailService;
   private readonly ICsTimeLimitedDataProtector _csTimeLimitedDataProtector;
   private readonly IUserTokenService _userTokenService;
+  private readonly ICacheService _cacheService;
   private readonly ILogger<UserManager> _logger;
 
   public UserManager(
@@ -28,6 +31,7 @@ public class UserManager : IUserManager {
     ITemplatedEmailService templatedEmailService,
     ICsTimeLimitedDataProtector csTimeLimitedDataProtector,
     IUserTokenService userTokenService,
+    ICacheService cacheService,
     ILogger<UserManager> logger)
   {
     _externalInfoOptions = Check.NotNull(externalInfoOptions?.Value, nameof(externalInfoOptions))!;
@@ -35,6 +39,7 @@ public class UserManager : IUserManager {
     _templatedEmailService = Check.NotNull(templatedEmailService, nameof(templatedEmailService));
     _csTimeLimitedDataProtector = Check.NotNull(csTimeLimitedDataProtector, nameof(csTimeLimitedDataProtector));
     _userTokenService = Check.NotNull(userTokenService, nameof(userTokenService));
+    _cacheService = Check.NotNull(cacheService, nameof(cacheService));
     _logger = Check.NotNull(logger, nameof(logger));
   }
 
@@ -177,7 +182,7 @@ public class UserManager : IUserManager {
     if (passwordObj.IsLockedOut()) {
 
       if (!csUser.Verification.LockoutEmailSent) {
-        // TODO: log details
+        _logger.LogWarning($"The email of user {csUser.Nickname} has been locked out.");
         // TODO: send lockout email
         csUser.Verification.LockoutEmailSent = true;
         await _csUserRepo.SaveChangesAsync(cancellationToken);
@@ -212,11 +217,11 @@ public class UserManager : IUserManager {
     csUser.Verification.LockoutEmailSent = false;
     response.IntegerData = (int)Math.Ceiling(csUser.Verification.SetLoginDateTimeAndGetInterval().TotalSeconds);
 
-    var irt = await _userTokenService.CreateAndCacheIrt(csUser, cancellationToken);
+    var irt = await _userTokenService.CreateAndCacheIrtAsync(csUser, cancellationToken);
     csUser.Identification.SetRefreshToken(irt);
     response.RefreshToken = IdentificationRefreshTokenDto.FromIrt(irt);
 
-    response.Token = await _userTokenService.CacheAndGetIdentificationToken(csUser, cancellationToken);
+    response.Token = await _userTokenService.CreateAndCacheItAsync(csUser.Nickname, csUser.Identification.Role, cancellationToken);
 
     await _csUserRepo.SaveChangesAsync(cancellationToken);
 
@@ -224,7 +229,7 @@ public class UserManager : IUserManager {
 
   }
 
-  public async Task<UserManagerResponse> SendChangePasswordEmail(Email email, CancellationToken cancellationToken) {
+  public async Task<UserManagerResponse> SendChangePasswordEmailAsync(Email email, CancellationToken cancellationToken) {
     var csUser = await _csUserRepo.FindByEmailAsNoTrackingAsync(email, cancellationToken);
     if (csUser is null || csUser.Verification.Banned) {
       return UserManagerResponse.Failed("WrongCredentials", "Wrong credentials provided.");
@@ -259,7 +264,7 @@ public class UserManager : IUserManager {
     return $"{_externalInfoOptions.ChangePasswordLink}?guid={protectedUserNickname}";
   }
 
-  public async Task<UserManagerResponse> ChangePassword(string guid, Password password, CancellationToken cancellationToken) {
+  public async Task<UserManagerResponse> ChangePasswordAsync(string guid, Password password, CancellationToken cancellationToken) {
 
     var nickname = _csTimeLimitedDataProtector.UnprotectNickname(guid, out bool expired);
     if (expired) {
@@ -288,15 +293,67 @@ public class UserManager : IUserManager {
 
   }
 
+  public async Task<UserManagerResponse> RefreshTokenAsync(string refreshTokenValue, CancellationToken cancellationToken) {
+
+    var failedResult = UserManagerResponse.Failed("WrongRefreshToken", "Refresh token is expired or wrong.");
+    var (nickname, role) = _csTimeLimitedDataProtector.UnprotectNicknameAndRole(refreshTokenValue, out bool expired);
+    if (expired || nickname is null) {
+      return failedResult;
+    }
+
+    var cachedRefreshToken = await _cacheService.GetStringAsync(CacheGroupKeyConstants.UserRefreshToken, nickname.Value, cancellationToken);
+
+    if (string.IsNullOrWhiteSpace(cachedRefreshToken)) {
+      CsUser? csUser = await _csUserRepo.FindByNicknameWithVerificationAndIdentificationRefreshTokenAsNoTrackingAsync(nickname, cancellationToken);
+      if (csUser is null || csUser.Verification.Banned) {
+        _logger.LogWarning($"Attempt to find a banned or nonexistent user after decrypted token!");
+        return failedResult;
+      }
+
+      if (!csUser.Identification.IdentificationRefreshToken.ExpiresAt.IsInFuture()) {
+        return failedResult;
+      }
+
+      cachedRefreshToken = csUser.Identification.IdentificationRefreshToken.RefreshToken;
+      role = csUser.Identification.Role;
+
+      await _cacheService.SetStringAsync(
+        CacheGroupKeyConstants.UserRefreshToken,
+        csUser.Nickname.Value,
+        cachedRefreshToken,
+        absoluteExpiration: csUser.Identification.IdentificationRefreshToken.ExpiresAt,
+        cancellationToken: cancellationToken);
+
+    }
 
 
-  // public async Task<string> CacheAndGetIdentificationToken(Nickname nickname, CancellationToken cancellationToken) {
-  //   // CsUser csUser =
-  //   //   await _csUserRepo.FindByEmailWithIdentificationAsNoTrackingAsync(email, cancellationToken)
-  //   //   ?? throw new NotFoundException("User not found with such email.");
+    if (!cachedRefreshToken.SequenceEqual(refreshTokenValue)) {
+      return failedResult;
+    }
 
-  //   // return await _userTokenService.CacheAndGetIdentificationToken(csUser, cancellationToken);
-  //   return null;
-  // }
+    var succeededResponse = UserManagerResponse.Succeeded();
+    succeededResponse.Token = await _userTokenService.CreateAndCacheItAsync(nickname, role, cancellationToken);
+
+    return succeededResponse;
+  }
+
+  public async Task<UserManagerResponse> LogoutAsync(Nickname nickname, CancellationToken cancellationToken) {
+
+    var failedResult = UserManagerResponse.Failed("CannotLogout", "Error has occurred while trying to log out.");
+    var csUser = await _csUserRepo.FindByNicknameWithVerificationAndIdentificationRefreshTokenAsync(nickname, cancellationToken);
+    if (csUser is null) {
+      _logger.LogWarning($"Attempt to find a nonexistent user after decrypted token!");
+      return failedResult;
+    }
+
+    await _cacheService.RemoveAsync(CacheGroupKeyConstants.UserRefreshToken, nickname.Value, cancellationToken);
+    await _cacheService.RemoveAsync(CacheGroupKeyConstants.UserJwt, nickname.Value, cancellationToken);
+
+    csUser.Identification.IdentificationRefreshToken.Clear();
+    await _csUserRepo.SaveChangesAsync(cancellationToken);
+
+    return UserManagerResponse.Succeeded();
+
+  }
 
 }

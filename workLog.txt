@@ -1,7 +1,17 @@
 
 token middleware
-refresh token endpoint, infra and setups
 check cs role
+send lockout email
+
+/// push VII
+
+improve 429 for authenticated user
+checks and cleanup
+irt table changes
+logout endpoint and co
+refresh token and setups
+refresh token infra
+refresh token endpoint
 
 /// push VI
 

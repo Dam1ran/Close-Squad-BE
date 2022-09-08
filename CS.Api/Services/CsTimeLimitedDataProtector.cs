@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.DataProtection;
 
 namespace CS.Api.Services;
 public class CsTimeLimitedDataProtector : ICsTimeLimitedDataProtector {
+
   private readonly IDataProtectionProvider _dataProtectionProvider;
   private readonly ILogger<CsTimeLimitedDataProtector> _logger;
 
@@ -15,17 +16,27 @@ public class CsTimeLimitedDataProtector : ICsTimeLimitedDataProtector {
     _dataProtectionProvider = Check.NotNull(dataProtectionProvider, nameof(dataProtectionProvider));
     _logger = Check.NotNull(logger, nameof(logger));
   }
-  public string ProtectNickname(Nickname nickname, TimeSpan forRelativeToNow) =>
-    HttpUtility.UrlEncode(GetNicknameProtector().Protect(nickname.Value, DateTimeOffset.UtcNow.Add(forRelativeToNow)));
+
+  public string ProtectNickname(Nickname nickname, TimeSpan forRelativeToNow) {
+
+    var paddedNickname = nickname.Value.PadLeft(20, '*');
+    var protectedNickname = GetNicknameProtector().Protect(paddedNickname, DateTimeOffset.UtcNow.Add(forRelativeToNow));
+    var encodedNickname = HttpUtility.UrlEncode(protectedNickname);
+
+    return encodedNickname;
+
+  }
 
   public Nickname? UnprotectNickname(string value, out bool expired) {
     var expiresAt = DateTimeOffset.MinValue;
     Nickname? nickname = null;
 
     try {
-      nickname = new Nickname(
-        GetNicknameProtector()
-        .Unprotect(HttpUtility.UrlDecode(value), out expiresAt));
+
+      var unprotectedNickname = GetNicknameProtector().Unprotect(HttpUtility.UrlDecode(value), out expiresAt);
+      var trimmedNickname = unprotectedNickname.TrimStart('*');
+
+      nickname = new Nickname(trimmedNickname);
 
       expired = false;
 
@@ -39,6 +50,40 @@ public class CsTimeLimitedDataProtector : ICsTimeLimitedDataProtector {
     return nickname;
 
   }
+
+  public string ProtectNicknameAndRole(Nickname nickname, string role, TimeSpan forRelativeToNow) {
+
+    var protectedValue = GetNicknameProtector().Protect($"{role}*{nickname.Value}", DateTimeOffset.UtcNow.Add(forRelativeToNow));
+    var encodedValue = HttpUtility.UrlEncode(protectedValue);
+
+    return encodedValue;
+  }
+
+  public (Nickname?, string) UnprotectNicknameAndRole(string value, out bool expired) {
+    var expiresAt = DateTimeOffset.MinValue;
+    Nickname? nickname = null;
+    var role = string.Empty;
+
+    try {
+
+      var unprotectedValue = GetNicknameProtector().Unprotect(HttpUtility.UrlDecode(value), out expiresAt);
+      var parts = unprotectedValue.Split('*');
+
+      role = parts[0];
+      nickname = new Nickname(parts[1]);
+
+      expired = false;
+
+      return (nickname, role);
+
+    } catch (CryptographicException ex) {
+      _logger.LogWarning(ex.Message);
+      expired = ex.InnerException == null;
+    }
+
+    return (nickname, role);
+  }
+
 
   private ITimeLimitedDataProtector GetNicknameProtector() {
     var protector =

@@ -52,9 +52,17 @@ public class CsUserRepository : Repository, ICsUserRepository {
       .Include(csu => csu.Identification.IdentificationRefreshToken)
       .SingleOrDefaultAsync(cancellationToken);
 
-  public async Task<CsUser?> FindByEmailWithIdentificationAsNoTrackingAsync(Email email, CancellationToken cancellationToken) =>
-    await ByEmail(email)
-      .Include(csu => csu.Identification)
+  public async Task<CsUser?> FindByNicknameWithVerificationAndIdentificationRefreshTokenAsNoTrackingAsync(Nickname nickname, CancellationToken cancellationToken) =>
+    await ByNickname(nickname)
+      .Include(csu => csu.Verification)
+      .Include(csu => csu.Identification.IdentificationRefreshToken)
+      .AsNoTracking()
+      .SingleOrDefaultAsync(cancellationToken);
+
+  public async Task<CsUser?> FindByNicknameWithVerificationAndIdentificationRefreshTokenAsync(Nickname nickname, CancellationToken cancellationToken) =>
+    await ByNickname(nickname)
+      .Include(csu => csu.Verification)
+      .Include(csu => csu.Identification.IdentificationRefreshToken)
       .SingleOrDefaultAsync(cancellationToken);
 
 }

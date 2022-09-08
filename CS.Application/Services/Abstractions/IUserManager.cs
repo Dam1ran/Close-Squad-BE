@@ -1,4 +1,3 @@
-using CS.Application.DataTransferObjects;
 using CS.Application.Models;
 using CS.Core.ValueObjects;
 
@@ -8,8 +7,9 @@ public interface IUserManager {
   Task<UserManagerResponse> SendConfirmationEmailAsync(Email email, CancellationToken cancellationToken);
   Task<UserManagerResponse> ConfirmEmailAsync(string guid, CancellationToken cancellationToken);
   Task<UserManagerResponse> LoginAsync(Email email, Password password, CancellationToken cancellationToken);
-  Task<UserManagerResponse> SendChangePasswordEmail(Email email, CancellationToken cancellationToken);
-  Task<UserManagerResponse> ChangePassword(string guid, Password password, CancellationToken cancellationToken);
-  // Task<string> CacheAndGetIdentificationToken(Nickname nickname, CancellationToken cancellationToken);
+  Task<UserManagerResponse> SendChangePasswordEmailAsync(Email email, CancellationToken cancellationToken);
+  Task<UserManagerResponse> ChangePasswordAsync(string guid, Password password, CancellationToken cancellationToken);
+  Task<UserManagerResponse> RefreshTokenAsync(string refreshTokenValue, CancellationToken cancellationToken);
+  Task<UserManagerResponse> LogoutAsync(Nickname nickname, CancellationToken cancellationToken);
 
 }

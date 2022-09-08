@@ -1,4 +1,3 @@
-// using System.Text;
 using CS.Api.Communications;
 using CS.Api.Services;
 using CS.Api.Support;
@@ -6,8 +5,6 @@ using CS.Api.Support.Filters;
 using CS.Application;
 using CS.Core.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc.ApplicationModels;
-// using Microsoft.AspNetCore.Authentication.JwtBearer;
-// using Microsoft.IdentityModel.Tokens;
 using CS.Persistence;
 using Microsoft.EntityFrameworkCore;
 using CS.Application.Persistence.Abstractions;
@@ -21,27 +18,44 @@ using CS.Api.Services.Abstractions;
 using CS.Api.Support.Other;
 using CS.Api.Support.Extensions;
 using CS.Application.Services.Implementations;
-// using CS.Application.Options;
+using CS.Application.Options;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using Microsoft.AspNetCore.Authorization;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddRouting(options => options.LowercaseUrls = true);
 
-// var jwtOption = builder.Configuration.GetSection(JwtOptions.Jwt).Get<JwtOptions>();
-// builder.Services.AddAuthentication(opt => {
-//       opt.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-//       opt.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-//   }).AddJwtBearer(options => {
-//       options.TokenValidationParameters = new TokenValidationParameters {
-//         ValidateIssuer = true,
-//         ValidateAudience = true,
-//         ValidateLifetime = true,
-//         ValidateIssuerSigningKey = true,
-//         ValidIssuer = jwtOption.ValidIssuer,
-//         ValidAudience = jwtOption.ValidAudience,
-//         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOption.Secret))
-//       };
-//   });
+var jwtOption = builder.Configuration.GetSection(JwtOptions.Jwt).Get<JwtOptions>();
+builder.Services.AddAuthentication(opt => {
+      opt.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+      opt.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+      opt.DefaultSignInScheme = JwtBearerDefaults.AuthenticationScheme;
+  }).AddJwtBearer(options => {
+      options.TokenValidationParameters = new TokenValidationParameters {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ClockSkew = TimeSpan.FromSeconds(jwtOption.ClockSkewSeconds),
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = jwtOption.ValidIssuer,
+        ValidAudience = jwtOption.ValidAudience,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOption.Secret))
+      };
+  });
+
+
+builder.Services.AddDataProtection();
+
+builder.Services.AddAuthorization(o => {
+  o.FallbackPolicy =
+    new AuthorizationPolicyBuilder()
+      .RequireAuthenticatedUser()
+      .Build();
+});
 
 builder.Services.AddAntiforgery(options => {
   options.Cookie.SameSite = SameSiteMode.None;
@@ -68,7 +82,6 @@ builder.Services.AddSession(options => {
   options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
 });
 
-// builder.Services.AddAuthorization();
 builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddEndpointsApiExplorer();
@@ -93,8 +106,6 @@ builder.Services.AddDbContext<Context>(o => {
 })
 .AddScoped<IContext>(provider => provider.GetRequiredService<Context>());
 
-builder.Services.AddDataProtection();
-
 builder.Services.AddSingleton<ITickService, TickService>();
 builder.Services.AddSingleton<TESTNAHUI>();
 
@@ -105,7 +116,11 @@ builder.Services.AddCors(options =>
       .AllowAnyHeader()
       .AllowAnyMethod()
       .AllowCredentials()
-      .WithHeaders(Api_Constants.AntiforgeryCookiePlaceholder, Api_Constants.AntiforgeryHeaderPlaceholder, Api_Constants.ContentType)
+      .WithHeaders(
+        Api_Constants.AntiforgeryCookiePlaceholder,
+        Api_Constants.AntiforgeryHeaderPlaceholder,
+        Api_Constants.ContentType,
+        Api_Constants.AuthorizationHeader)
       .WithExposedHeaders(Api_Constants.AntiforgeryCookiePlaceholder, Api_Constants.ContentType)
   )
 );
@@ -117,7 +132,10 @@ builder.Services.AddControllers(options => {
   options.Filters.Add<ValidateAntiforgeryTokenFilter>();
 });
 
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 var app = builder.Build();
+
 
 app.UseMiddleware<CatchMiddlewareExceptions>();
 
@@ -150,15 +168,15 @@ app.UseSecurityHeaders(policies => policies
   .AddCrossOriginResourcePolicy(builder => builder.SameOrigin())
   .AddCrossOriginEmbedderPolicy(builder => builder.RequireCorp()));
 
+app.UseAuthentication();
+
 app.UseMiddleware<AttributeRateLimiting>();
 
-app.UseSession();
 
+app.UseSession();
 app.UseMiddleware<CaptchaInquiry>();
 
-app.UseAuthentication();
 app.UseMiddleware<AuthenticatedClientRateLimiting>();
-
 
 app.UseAuthorization();
 app.MapControllers();

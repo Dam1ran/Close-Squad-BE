@@ -1,10 +1,12 @@
 using System.Net;
+using System.Security.Claims;
 using CS.Api.Support.Attributes;
 using CS.Api.Support.Exceptions;
 using CS.Api.Support.Models;
 using CS.Application.Services.Abstractions;
 using CS.Application.Support.Constants;
 using CS.Application.Support.Utils;
+using CS.Core.Enums;
 
 namespace CS.Api.Support.Middleware;
 public class AttributeRateLimiting {
@@ -91,7 +93,13 @@ public class AttributeRateLimiting {
   }
 
   private bool IsGameMaster(HttpContext httpContext) {
-    return false; // TODO
+
+    if (httpContext.User.Identity is ClaimsIdentity identity) {
+      // rework later?
+      return (GetClientRole(httpContext)).Equals(UserRole.GMA.ToString(), StringComparison.InvariantCultureIgnoreCase);
+    }
+
+    return false;
   }
 
   private string GetEndpoint(HttpContext httpContext) => $"{httpContext.Request.Path}";
@@ -99,16 +107,25 @@ public class AttributeRateLimiting {
     ip = $"{httpContext.Connection.RemoteIpAddress}";
     return string.IsNullOrWhiteSpace(ip);
   }
-  private string GetClientRole(HttpContext httpContext) {
-    return string.Empty; // TODO
-  }
-  private string GetClientNickname(HttpContext httpContext) {
-    // var typeKey = string.Empty;
-    // if (httpContext.User.Identity is ClaimsIdentity identity) {
-    //   email = identity.FindFirst(ClaimTypes.Email).Value;
-    // }
 
-    return string.Empty; // TODO
+  private string GetClientRole(HttpContext httpContext) {
+    var role = string.Empty;
+
+    if (httpContext.User.Identity is ClaimsIdentity identity) {
+      role = identity.FindFirst(ClaimTypes.Role)?.Value ?? string.Empty;
+    }
+
+    return role;
+  }
+
+  private string GetClientNickname(HttpContext httpContext) {
+    var nickname = string.Empty;
+
+    if (httpContext.User.Identity is ClaimsIdentity identity) {
+      nickname = identity.FindFirst("nickname")?.Value ?? string.Empty;
+    }
+
+    return nickname;
   }
 
   private string ComposeClientStatisticsKey(string firstKey, string secondKey) => $"[{firstKey}]: {secondKey}";

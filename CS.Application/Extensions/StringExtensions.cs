@@ -1,5 +1,6 @@
 namespace CS.Application.Extensions;
 public static class StringExtensions {
+
   public static bool EqualsExceptNCharacters(this string comparer, string compareTo, int numberOfCharacters) {
     if (comparer.Length != compareTo.Length) {
       return false;
@@ -17,4 +18,5 @@ public static class StringExtensions {
 
     return numberOfCharacters >= count;
   }
+
 }

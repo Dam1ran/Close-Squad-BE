@@ -1,8 +1,10 @@
 using System.Net;
+using System.Security.Claims;
 using CS.Api.Support.Models;
 using CS.Application.Services.Abstractions;
 using CS.Application.Support.Constants;
 using CS.Application.Support.Utils;
+using Microsoft.AspNetCore.Authorization;
 
 namespace CS.Api.Support.Middleware;
 public class AuthenticatedClientRateLimiting {
@@ -10,7 +12,7 @@ public class AuthenticatedClientRateLimiting {
   private readonly ICacheService _cacheService;
   private readonly ILogger<AuthenticatedClientRateLimiting> _logger;
   private readonly int TimeWindowInMilliSeconds = 1000;
-  private readonly int MaxRequests = 1;
+  private readonly int MaxRequests = 2;
 
   public AuthenticatedClientRateLimiting(
     RequestDelegate next,
@@ -22,6 +24,11 @@ public class AuthenticatedClientRateLimiting {
   }
 
   public async Task InvokeAsync(HttpContext httpContext) {
+    var allowAnonymousAttribute = httpContext.GetEndpoint()?.Metadata.GetMetadata<AllowAnonymousAttribute>();
+    if (allowAnonymousAttribute is not null) {
+      await _next(httpContext);
+      return;
+    }
 
     var nickname = GetClientNickname(httpContext);
     if (string.IsNullOrEmpty(nickname)) {
@@ -36,6 +43,7 @@ public class AuthenticatedClientRateLimiting {
     if (statistics is not null) {
       if (statistics.NumberOfRequests >= MaxRequests) {
         httpContext.Response.StatusCode = (int)HttpStatusCode.TooManyRequests;
+        await httpContext.Response.WriteAsJsonAsync(new ErrorDetails { Code = "UserThrottle", Description = "User actions too frequent." });
         return;
       }
 
@@ -54,7 +62,15 @@ public class AuthenticatedClientRateLimiting {
     await _next(httpContext);
   }
   private string GetClientNickname(HttpContext httpContext) {
-    return string.Empty; // TODO
+
+    var nickname = string.Empty;
+
+    if (httpContext.User.Identity is ClaimsIdentity identity) {
+      nickname = identity.FindFirst("nickname")?.Value ?? string.Empty;
+    }
+
+    return nickname;
+
   }
 
 }
