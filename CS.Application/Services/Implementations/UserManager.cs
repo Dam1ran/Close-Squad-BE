@@ -183,7 +183,7 @@ public class UserManager : IUserManager {
 
       if (!csUser.Verification.LockoutEmailSent) {
         _logger.LogWarning($"The email of user {csUser.Nickname} has been locked out.");
-        // TODO: send lockout email
+        await _templatedEmailService.SendAccountLockedOutAsync(email.Value, csUser.Nickname.Value);
         csUser.Verification.LockoutEmailSent = true;
         await _csUserRepo.SaveChangesAsync(cancellationToken);
       }

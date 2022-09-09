@@ -1,7 +1,14 @@
 
+check cs role and endpoint
+test endpoint
+
 token middleware
-check cs role
+
+/// push VIII
+
 send lockout email
+check irt after reboot
+check changed signature
 
 /// push VII
 

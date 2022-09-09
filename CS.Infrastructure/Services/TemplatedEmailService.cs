@@ -18,7 +18,7 @@ public class TemplatedEmailService : ITemplatedEmailService {
 
   public async Task<SendEmailResponse> SendConfirmationAsync(string email, string userName, string confirmationLink) {
 
-    var templateText = default(string);
+    var templateText = string.Empty;
     using (var reader =
       new StreamReader(
         Assembly.GetExecutingAssembly()?.GetManifestResourceStream("CS.Infrastructure.Support.Email.ConfirmEmailTemplate.html")!, Encoding.UTF8)) {
@@ -32,7 +32,7 @@ public class TemplatedEmailService : ITemplatedEmailService {
     return await _emailService.SendAsync(new EmailDetails() {
       ToName = userName,
       ToEmail = email,
-      Subject = "Your Email Confirmation Link",
+      Subject = "Your email confirmation link",
       IsHTML = true,
       Content = templateText
     });
@@ -41,7 +41,7 @@ public class TemplatedEmailService : ITemplatedEmailService {
 
   public async Task<SendEmailResponse> SendResetPasswordAsync(string email, string userName, string confirmationLink) {
 
-    var templateText = default(string);
+    var templateText = string.Empty;
     using (var reader =
       new StreamReader(
         Assembly.GetExecutingAssembly()?.GetManifestResourceStream("CS.Infrastructure.Support.Email.ResetPasswordEmailTemplate.html")!, Encoding.UTF8)) {
@@ -56,6 +56,27 @@ public class TemplatedEmailService : ITemplatedEmailService {
       ToName = userName,
       ToEmail = email,
       Subject = "Change password request",
+      IsHTML = true,
+      Content = templateText
+    });
+
+  }
+
+  public async Task<SendEmailResponse> SendAccountLockedOutAsync(string email, string userName) {
+
+    var templateText = string.Empty;
+    using (var reader =
+      new StreamReader(
+        Assembly.GetExecutingAssembly()?.GetManifestResourceStream("CS.Infrastructure.Support.Email.AccountLockedOutEmailTemplate.html")!, Encoding.UTF8)) {
+      templateText = await reader.ReadToEndAsync();
+    }
+    templateText = templateText
+      .Replace("--WebSiteLink--", _externalInfoOptions.WebSiteLink);
+
+    return await _emailService.SendAsync(new EmailDetails() {
+      ToName = userName,
+      ToEmail = email,
+      Subject = "Account locked out",
       IsHTML = true,
       Content = templateText
     });

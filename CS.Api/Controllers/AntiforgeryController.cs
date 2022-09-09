@@ -30,7 +30,7 @@ public class AntiforgeryController : ControllerBase {
     Response.Cookies.Append(
       Api_Constants.AntiforgeryCookiePlaceholder,
       tokens.RequestToken,
-      new CookieOptions { HttpOnly = false, Secure = true, SameSite = SameSiteMode.None });
+      new CookieOptions { HttpOnly = false, Secure = true, SameSite = SameSiteMode.None, Expires = DateTimeOffset.UtcNow.AddMinutes(5) });
 
     return NoContent();
   }

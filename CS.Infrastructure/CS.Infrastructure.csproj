@@ -16,6 +16,7 @@
   <ItemGroup>
     <EmbeddedResource Include="Support\Email\ConfirmEmailTemplate.html" />
     <EmbeddedResource Include="Support\Email\ResetPasswordEmailTemplate.html" />
+    <EmbeddedResource Include="Support\Email\AccountLockedOutEmailTemplate.html" />
   </ItemGroup>
 
   <PropertyGroup>
