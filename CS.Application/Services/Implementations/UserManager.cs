@@ -217,11 +217,13 @@ public class UserManager : IUserManager {
     csUser.Verification.LockoutEmailSent = false;
     response.IntegerData = (int)Math.Ceiling(csUser.Verification.SetLoginDateTimeAndGetInterval().TotalSeconds);
 
-    var irt = await _userTokenService.CreateAndCacheIrtAsync(csUser, cancellationToken);
+    var guid = Guid.NewGuid().ToString();
+    var irt = await _userTokenService.CreateAndCacheIrtAsync(csUser.Nickname, csUser.Identification.Role, guid, cancellationToken);
     csUser.Identification.SetRefreshToken(irt);
     response.RefreshToken = IdentificationRefreshTokenDto.FromIrt(irt);
 
     response.Token = await _userTokenService.CreateAndCacheItAsync(csUser.Nickname, csUser.Identification.Role, cancellationToken);
+    response.Guid = guid;
 
     await _csUserRepo.SaveChangesAsync(cancellationToken);
 
@@ -293,10 +295,10 @@ public class UserManager : IUserManager {
 
   }
 
-  public async Task<UserManagerResponse> RefreshTokenAsync(string refreshTokenValue, CancellationToken cancellationToken) {
+  public async Task<UserManagerResponse> RefreshTokenAsync(string sessionIdValue, string refreshTokenValue, CancellationToken cancellationToken) {
 
     var failedResult = UserManagerResponse.Failed("WrongRefreshToken", "Refresh token is expired or wrong.");
-    var (nickname, role) = _csTimeLimitedDataProtector.UnprotectNicknameAndRole(refreshTokenValue, out bool expired);
+    var (nickname, role, sessionId) = _csTimeLimitedDataProtector.UnprotectNicknameAndRole(refreshTokenValue, out bool expired);
     if (expired || nickname is null) {
       return failedResult;
     }
@@ -327,7 +329,7 @@ public class UserManager : IUserManager {
     }
 
 
-    if (!cachedRefreshToken.SequenceEqual(refreshTokenValue)) {
+    if (!cachedRefreshToken.SequenceEqual(refreshTokenValue) || !sessionId.SequenceEqual(sessionIdValue)) {
       return failedResult;
     }
 

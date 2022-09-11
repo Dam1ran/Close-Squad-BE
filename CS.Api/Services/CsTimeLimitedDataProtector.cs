@@ -51,37 +51,43 @@ public class CsTimeLimitedDataProtector : ICsTimeLimitedDataProtector {
 
   }
 
-  public string ProtectNicknameAndRole(Nickname nickname, string role, TimeSpan forRelativeToNow) {
+  public string ProtectNicknameAndRole(Nickname nickname, string role, string sessionIdValue, TimeSpan forRelativeToNow) {
 
-    var protectedValue = GetNicknameProtector().Protect($"{role}*{nickname.Value}", DateTimeOffset.UtcNow.Add(forRelativeToNow));
+    var protectedValue = GetNicknameProtector().Protect($"{role}*{nickname.Value}*{sessionIdValue}", DateTimeOffset.UtcNow.Add(forRelativeToNow));
     var encodedValue = HttpUtility.UrlEncode(protectedValue);
 
     return encodedValue;
   }
 
-  public (Nickname?, string) UnprotectNicknameAndRole(string value, out bool expired) {
+  public (Nickname?, string, string) UnprotectNicknameAndRole(string value, out bool expired) {
     var expiresAt = DateTimeOffset.MinValue;
     Nickname? nickname = null;
     var role = string.Empty;
+    var sessionIdValue = string.Empty;
 
     try {
 
       var unprotectedValue = GetNicknameProtector().Unprotect(HttpUtility.UrlDecode(value), out expiresAt);
       var parts = unprotectedValue.Split('*');
 
-      role = parts[0];
-      nickname = new Nickname(parts[1]);
-
       expired = false;
 
-      return (nickname, role);
+      if (parts.Length == 3) {
+        role = parts[0];
+        nickname = new Nickname(parts[1]);
+        sessionIdValue = parts[2];
+
+
+        return (nickname, role, sessionIdValue);
+      }
+
 
     } catch (CryptographicException ex) {
       _logger.LogWarning(ex.Message);
       expired = ex.InnerException == null;
     }
 
-    return (nickname, role);
+    return (nickname, role, sessionIdValue);
   }
 
 

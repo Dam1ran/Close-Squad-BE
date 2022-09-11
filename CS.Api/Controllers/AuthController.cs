@@ -137,8 +137,12 @@ public class AuthController : ControllerBase {
 
     Response.Cookies.Append(Api_Constants.RefreshTokenCookieKey, loginResponse.RefreshToken!.Token, cookieOptions);
 
-    // TODO: middleware will check against that token
-    return Ok(new { token = loginResponse.Token, lastLoginInterval = loginResponse.IntegerData });
+    return Ok(
+      new {
+        token = loginResponse.Token,
+        lastLoginInterval = loginResponse.IntegerData,
+        sessionId = loginResponse.Guid
+      });
 
   }
 
@@ -200,13 +204,14 @@ public class AuthController : ControllerBase {
   [ProducesDefaultResponseType]
   [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
   [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  public async Task<IActionResult> RefreshToken(CancellationToken cancellationToken) {
+  public async Task<IActionResult> RefreshToken([FromBody] SessionIdDto sessionIdDto, CancellationToken cancellationToken) {
+
     var refreshToken = Request.Cookies[Api_Constants.RefreshTokenCookieKey];
     if (string.IsNullOrWhiteSpace(refreshToken)) {
       return Unauthorized();
     }
 
-    var result = await _userManager.RefreshTokenAsync(refreshToken, cancellationToken);
+    var result = await _userManager.RefreshTokenAsync(sessionIdDto.SessionId, refreshToken, cancellationToken);
     if (!result.Successful) {
       return Unauthorized();
     }

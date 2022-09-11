@@ -29,15 +29,16 @@ public class UserTokenService : IUserTokenService {
     _csTimeLimitedDataProtector = Check.NotNull(csTimeLimitedDataProtector, nameof(csTimeLimitedDataProtector));
   }
 
-  public async Task<IdentificationRefreshToken> CreateAndCacheIrtAsync(CsUser csUser, CancellationToken cancellationToken) {
+  public async Task<IdentificationRefreshToken> CreateAndCacheIrtAsync(Nickname nickname, string role, string sessionIdValue, CancellationToken cancellationToken) {
 
     var rtExpiration = TimeSpan.FromMinutes(_refreshTokenOptions.ExpiresInMinutes);
 
     var protectedValue =
       _csTimeLimitedDataProtector
         .ProtectNicknameAndRole(
-          csUser.Nickname,
-          csUser.Identification.Role,
+          nickname,
+          role,
+          sessionIdValue,
           rtExpiration);
 
     var tokenExpiration = DateTimeOffset.UtcNow.AddMinutes(_refreshTokenOptions.ExpiresInMinutes);
@@ -46,7 +47,7 @@ public class UserTokenService : IUserTokenService {
 
     await _cacheService.SetStringAsync(
       CacheGroupKeyConstants.UserRefreshToken,
-      csUser.Nickname.Value,
+      nickname.Value,
       irt.RefreshToken,
       absoluteExpirationRelativeToNow: rtExpiration,
       cancellationToken: cancellationToken);

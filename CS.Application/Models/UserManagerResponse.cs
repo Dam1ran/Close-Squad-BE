@@ -7,6 +7,7 @@ public class UserManagerResponse {
   public Dictionary<string, string> ErrorDetails { get; } = new();
   public int? IntegerData { get; set; }
   public string? Token { get; set; }
+  public string? Guid { get; set; }
   public IdentificationRefreshTokenDto? RefreshToken { get; set; }
   public static UserManagerResponse Succeeded() => new();
 
