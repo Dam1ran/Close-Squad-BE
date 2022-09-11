@@ -178,6 +178,8 @@ app.UseMiddleware<CaptchaInquiry>();
 
 app.UseMiddleware<AuthenticatedClientRateLimiting>();
 
+app.UseMiddleware<CheckSameToken>();
+
 app.UseAuthorization();
 app.MapControllers();
 
