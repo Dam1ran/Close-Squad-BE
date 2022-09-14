@@ -30,7 +30,7 @@ public class CheckSameToken {
     var cachedToken = await _cacheService
       .GetStringAsync(CacheGroupKeyConstants.UserJwt, GetClaim(httpContext, "nickname"), httpContext.RequestAborted);
 
-    if (string.IsNullOrEmpty(cachedToken) ||!cachedToken.SequenceEqual(GetClaim(httpContext, "jti"))) {
+    if (string.IsNullOrEmpty(cachedToken) || !cachedToken.SequenceEqual(GetClaim(httpContext, "jti"))) {
       httpContext.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
       return;
     }

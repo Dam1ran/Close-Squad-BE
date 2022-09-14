@@ -1,5 +1,4 @@
 using CS.Application.Commands.Abstractions;
-using CS.Application.DataTransferObjects;
 using CS.Application.Persistence.Abstractions;
 using CS.Application.Support.Utils;
 using CS.Core.Entities;
@@ -8,11 +7,11 @@ using Microsoft.Extensions.Logging;
 
 namespace CS.Application.Commands.Announcement;
 
-public class CreateAnnouncementCommand : IRequest<ServerAnnouncementDto> {
+public class CreateAnnouncementCommand : IRequest {
   public string Message { get; set; } = string.Empty;
 }
 
-public class CreateAnnouncementCommandHandler : CommandHandler<CreateAnnouncementCommand, ServerAnnouncementDto> {
+public class CreateAnnouncementCommandHandler : CommandHandler<CreateAnnouncementCommand> {
   private readonly IContext _context;
 
   public CreateAnnouncementCommandHandler(
@@ -21,13 +20,13 @@ public class CreateAnnouncementCommandHandler : CommandHandler<CreateAnnouncemen
     _context = Check.NotNull(context, nameof(context));
   }
 
-  public override async Task<ServerAnnouncementDto> Handle(CreateAnnouncementCommand request, CancellationToken cancellationToken) {
+  public override async Task<Unit> Handle(CreateAnnouncementCommand request, CancellationToken cancellationToken) {
     var announcement = new ServerAnnouncement(request.Message);
 
-    // await _context.Announcements.AddAsync(announcement);
+    await _context.ServerAnnouncements.AddAsync(announcement);
     await _context.SaveChangesAsync();
 
-    return announcement.MapToDto();
+    return Unit.Value;
   }
 
 }

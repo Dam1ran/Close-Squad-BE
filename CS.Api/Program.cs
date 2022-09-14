@@ -23,7 +23,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.AspNetCore.Authorization;
-
+using CS.Core.Enums;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -51,6 +51,9 @@ builder.Services.AddAuthentication(opt => {
 builder.Services.AddDataProtection();
 
 builder.Services.AddAuthorization(o => {
+  o.AddPolicy(Api_Constants.AdministrationPolicy, policy => policy.RequireRole(UserRole.ADM.ToString()).RequireAuthenticatedUser());
+  o.AddPolicy(Api_Constants.GameMasterPolicy, policy => policy.RequireRole(UserRole.GMA.ToString()).RequireAuthenticatedUser());
+  o.AddPolicy(Api_Constants.ManagementPolicy, policy => policy.RequireRole(UserRole.ADM.ToString(), UserRole.GMA.ToString()).RequireAuthenticatedUser());
   o.FallbackPolicy =
     new AuthorizationPolicyBuilder()
       .RequireAuthenticatedUser()

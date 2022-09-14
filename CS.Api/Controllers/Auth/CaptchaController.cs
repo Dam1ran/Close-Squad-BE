@@ -8,7 +8,7 @@ using CS.Core.Support;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace CS.Api.Controllers;
+namespace CS.Api.Controllers.Auth;
 [ApiController]
 [Route("[controller]")]
 [ApiExplorerSettings(GroupName = "v1")]

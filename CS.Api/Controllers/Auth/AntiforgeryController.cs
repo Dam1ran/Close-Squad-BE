@@ -5,7 +5,7 @@ using CS.Core.Support;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Mvc;
 
-namespace CS.Api.Controllers;
+namespace CS.Api.Controllers.Auth;
 [ApiController]
 [IgnoreAntiforgeryToken]
 [Route("[controller]")]

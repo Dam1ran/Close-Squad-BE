@@ -11,7 +11,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 
-namespace CS.Api.Controllers;
+namespace CS.Api.Controllers.Auth;
 [ApiController]
 [Route("[controller]")]
 [ApiExplorerSettings(GroupName = "v1")]
@@ -244,13 +244,4 @@ public class AuthController : ControllerBase {
     return NoContent();
   }
 
-
-  [HttpPost("test")]
-  public async Task<IActionResult> Test() {
-    return Ok();
-  }
-  [HttpPost("test2")]
-  public async Task<IActionResult> Test2() {
-    return Ok();
-  }
 }
