@@ -4,6 +4,7 @@ using System.Security.Claims;
 using CS.Application.Services.Abstractions;
 using CS.Application.Support.Constants;
 using CS.Application.Support.Utils;
+using Microsoft.AspNetCore.Authorization;
 
 namespace CS.Api.Support.Middleware;
 public class CheckSameToken {
@@ -20,6 +21,12 @@ public class CheckSameToken {
 
   public async Task InvokeAsync(HttpContext httpContext) {
     Check.NotNull(httpContext, nameof(httpContext));
+
+    var allowAnonymousAttribute = httpContext.GetEndpoint()?.Metadata.GetMetadata<AllowAnonymousAttribute>();
+    if (allowAnonymousAttribute is not null) {
+      await _next(httpContext);
+      return;
+    }
 
     var token = httpContext.Request.Headers[Api_Constants.AuthorizationHeader].FirstOrDefault()?.Split(" ").Last();
     if (string.IsNullOrWhiteSpace(token)) {

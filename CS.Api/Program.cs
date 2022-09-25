@@ -24,6 +24,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.AspNetCore.Authorization;
 using CS.Core.Enums;
+using Microsoft.AspNetCore.SignalR;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -44,6 +45,17 @@ builder.Services.AddAuthentication(opt => {
         ValidIssuer = jwtOption.ValidIssuer,
         ValidAudience = jwtOption.ValidAudience,
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOption.Secret))
+
+      };
+      options.Events = new() {
+        OnMessageReceived = (context) => {
+          var path = context.HttpContext.Request.Path;
+          if (path.StartsWithSegments("/MainHub")) {
+            var accessToken = context.Request.Query["access_token"];
+            context.Token = accessToken;
+          }
+          return Task.CompletedTask;
+        }
       };
   });
 
@@ -100,7 +112,14 @@ builder.Services.AddTransient<IEmailService, SendGridEmailService>();
 builder.Services.AddTransient<ITemplatedEmailService, TemplatedEmailService>();
 builder.Services.AddSingleton<ICachedUserService, CachedUserService>();
 builder.Services.AddScoped<ICaptchaService, CaptchaService>();
-builder.Services.AddSignalR();
+
+
+builder.Services.AddSignalR(o => {
+  o.AddFilter<AuthHubFilter>();
+  o.MaximumParallelInvocationsPerClient = 3;
+  o.MaximumReceiveMessageSize = 8192;
+});
+builder.Services.AddSingleton<IUserIdProvider, UserIdProvider>();
 
 builder.Services.AddDbContext<Context>(o => {
   o.UseSqlServer(
@@ -108,6 +127,10 @@ builder.Services.AddDbContext<Context>(o => {
     o => o.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery));
 })
 .AddScoped<IContext>(provider => provider.GetRequiredService<Context>());
+
+
+builder.Services.AddSingleton<IPlayerService, PlayerService>();
+builder.Services.AddSingleton<IWorldMapService, WorldMapService>();
 
 builder.Services.AddSingleton<ITickService, TickService>();
 builder.Services.AddSingleton<TESTNAHUI>();
@@ -123,7 +146,9 @@ builder.Services.AddCors(options =>
         Api_Constants.AntiforgeryCookiePlaceholder,
         Api_Constants.AntiforgeryHeaderPlaceholder,
         Api_Constants.ContentType,
-        Api_Constants.AuthorizationHeader)
+        Api_Constants.AuthorizationHeader,
+        Api_Constants.XRequestedWith,
+        Api_Constants.XSignalRUserAgent)
       .WithExposedHeaders(Api_Constants.AntiforgeryCookiePlaceholder, Api_Constants.ContentType)
   )
 );
@@ -186,6 +211,10 @@ app.UseMiddleware<CheckSameToken>();
 app.UseAuthorization();
 app.MapControllers();
 
-app.MapHub<MainHub>("/MainHub");
+app.MapHub<MainHub>("/MainHub", options => {
+  options.ApplicationMaxBufferSize = 16384;
+  options.TransportMaxBufferSize = 16384;
+  options.CloseOnAuthenticationExpiration = true;
+});
 
 app.Run();

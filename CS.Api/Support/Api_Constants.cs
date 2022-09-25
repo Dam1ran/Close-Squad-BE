@@ -10,5 +10,7 @@ public static class Api_Constants {
   public const string ManagementPolicy = "RequireAdmOrGmaRole";
   public const string AdministrationPolicy = "RequireAdmRole";
   public const string GameMasterPolicy = "RequireGmaRole";
+  public const string XRequestedWith = "x-requested-with";
+  public const string XSignalRUserAgent = "x-signalr-user-agent";
 
 }

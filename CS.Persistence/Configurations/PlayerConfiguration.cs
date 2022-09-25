@@ -1,19 +1,16 @@
-using CS.Core.Entities;
-using CS.Core.Entities.Auth;
-using CS.Core.ValueObjects;
 using CS.Persistence.Configurations.Abstractions;
-using Microsoft.EntityFrameworkCore;
+using CS.Core.Entities;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Microsoft.EntityFrameworkCore;
+using CS.Core.ValueObjects;
 
 namespace CS.Persistence.Configurations;
-public class CsUserConfiguration : EntityConfiguration<CsUser> {
-  public override string TableName => "CsUsers";
-  protected override string? Schema => "cs.auth";
+public class PlayerConfiguration : EntityConfiguration<Player> {
+  public override string TableName => "Players";
+  public override void OnConfigure(EntityTypeBuilder<Player> builder) {
 
-  public override void OnConfigure(EntityTypeBuilder<CsUser> builder) {
-
-    builder.OwnsOne(csu => csu.Nickname, nickname => {
-      nickname.Property<long>("csUserId");
+    builder.OwnsOne(player => player.Nickname, nickname => {
+      nickname.Property<long>("playerId");
       nickname
         .Property(p => p.Value)
         .HasColumnName("Nickname")
@@ -33,21 +30,22 @@ public class CsUserConfiguration : EntityConfiguration<CsUser> {
     .IsRequired();
 
     builder
-      .HasOne(csu => csu.Verification)
-      .WithOne()
-      .HasForeignKey<Verification>("csUserId")
+      .Property(p => p.ClanName)
+      .HasMaxLength(20)
+      .HasDefaultValue("")
       .IsRequired();
 
     builder
-      .HasOne(csu => csu.Identification)
-      .WithOne()
-      .HasForeignKey<Identification>("csUserId")
+      .Property(p => p.ClanIcon)
+      .HasMaxLength(20)
+      .HasDefaultValue("")
       .IsRequired();
 
     builder
-      .HasOne(csu => csu.Player)
+      .HasMany(p => p.Characters)
       .WithOne()
-      .HasForeignKey<Player>("csUserId")
+      .HasForeignKey("playerId")
+      .OnDelete(DeleteBehavior.NoAction)
       .IsRequired();
 
   }

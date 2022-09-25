@@ -65,4 +65,10 @@ public class CsUserRepository : Repository, ICsUserRepository {
       .Include(csu => csu.Identification.IdentificationRefreshToken)
       .SingleOrDefaultAsync(cancellationToken);
 
+  public async Task<CsUser?> FindByNicknameWithPlayerQuadrantAsync(Nickname nickname, CancellationToken cancellationToken) =>
+    await ByNickname(nickname)
+      .Include(csu => csu.Player)
+        .ThenInclude(p => p.Quadrant)
+      .SingleOrDefaultAsync(cancellationToken);
+
 }

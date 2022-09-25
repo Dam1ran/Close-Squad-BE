@@ -1,19 +1,17 @@
-// using CS.Core.Entities.Abstractions;
-// using CS.Core.Entities.Auth;
-// using CS.Core.ValueObjects;
+using CS.Core.Entities.Abstractions;
 
-// namespace CS.Core.Entities;
-// public class Character : Entity { // NOT DONE
+namespace CS.Core.Entities;
+public class Character : Entity {
+  #nullable disable
+  protected Character() { }
+  #nullable restore
+  public Character(Quadrant quadrant) {
+    Quadrant = quadrant;
+  }
 
-//   public Character(string name, User user) {
-//     Name = new Name(name);
-//     User = user;
-//   }
-//   #nullable disable
-//   protected Character() {}
-//   #nullable restore
+  public byte Level { get; set; }
 
-//   public Name Name { get; private set; }
+  public long QuadrantId { get; set; }
+  public Quadrant Quadrant { get; set; }
 
-//   public User User { get; private set; }
-// }
+}

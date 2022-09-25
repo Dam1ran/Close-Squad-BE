@@ -7,5 +7,7 @@ public class CacheGroupKeyConstants {
   public const string Captcha = "[CCK]";
   public const string AuthenticatedClientStatistics = "[ACS]";
   public const string AttributeRateLimiting = "[ART]";
+  public const string UserChatThrottle = "[UCT]";
+  public const string UserShoutThrottle = "[UST]";
 
 }

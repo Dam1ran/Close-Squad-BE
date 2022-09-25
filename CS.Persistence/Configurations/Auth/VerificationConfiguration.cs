@@ -37,7 +37,6 @@ public class VerificationConfiguration : EntityConfiguration<Verification> {
       .HasDefaultValue("")
       .IsRequired();
 
-
   }
 
 }

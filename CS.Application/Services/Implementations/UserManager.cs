@@ -312,7 +312,7 @@ public class UserManager : IUserManager {
         return failedResult;
       }
 
-      if (!csUser.Identification.IdentificationRefreshToken.ExpiresAt.IsInFuture()) {
+      if (csUser.Identification.IdentificationRefreshToken is null || !csUser.Identification.IdentificationRefreshToken.ExpiresAt.IsInFuture()) {
         return failedResult;
       }
 

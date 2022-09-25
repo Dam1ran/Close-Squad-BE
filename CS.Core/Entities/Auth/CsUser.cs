@@ -12,11 +12,14 @@ public class CsUser : Entity {
     Nickname = nickname ?? throw new DomainValidationException(nameof(nickname));
     Verification = new(email);
     Identification = new(password);
+    Player = new Player(nickname);
   }
 
   public Nickname Nickname { get; private set; }
 
   public Verification Verification { get; private set; }
   public Identification Identification { get; private set; }
+
+  public Player Player { get; private set; }
 
 }
