@@ -8,13 +8,13 @@ public class PlayerDto {
   public string ClanIcon { get; set; } = "";
   public long? QuadrantId { get; set; }
 
-  public static PlayerDto FromPlayer(Player player, string nickname) =>
+  public static PlayerDto FromPlayer(Player player) =>
     new() {
       Id = player.Id,
-      Nickname = nickname,
+      Nickname = player.Nickname.Value,
       ClanName = player.ClanName,
       ClanIcon = player.ClanIcon,
-      QuadrantId = player.QuadrantId // ??
+      QuadrantId = player.Quadrant?.Id
     };
 
 }

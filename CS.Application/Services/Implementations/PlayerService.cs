@@ -25,7 +25,7 @@ public class PlayerService : IPlayerService {
     _worldMapService = Check.NotNull(worldMapService, nameof(worldMapService));
   }
 
-  public async Task<Player?> GetPlayer(Nickname nickname, bool store = true, CancellationToken cancellationToken = default) {
+  public async Task<Player?> GetPlayerAsync(Nickname nickname, bool store = true, CancellationToken cancellationToken = default) {
 
     if (Players.TryGetValue(nickname.ValueLowerCase, out Player? storedPlayer)) {
       return storedPlayer;
@@ -36,44 +36,38 @@ public class PlayerService : IPlayerService {
     }
 
     using (var scope = _serviceProvider.CreateScope()) {
-      var _csUserRepo = scope.ServiceProvider.GetRequiredService<ICsUserRepository>();
-      var csUser = await _csUserRepo.FindByNicknameWithPlayerQuadrantAsync(nickname, cancellationToken);
-      if (csUser is null) {
+      var _playerRepo = scope.ServiceProvider.GetRequiredService<IPlayerRepository>();
+      var player = await _playerRepo.FindByNicknameAsNoTrackingAsync(nickname, cancellationToken);
+      if (player is null) {
         return null;
-      }
-
-      if (!csUser.Player.QuadrantId.HasValue) {
-        var startingQuadrant = await _worldMapService.GetStartingQuadrantAsync(cancellationToken);
-        csUser.Player.Quadrant = startingQuadrant;
-        await _csUserRepo.SaveChangesAsync(cancellationToken);
       }
 
       return Players
         .AddOrUpdate(
           nickname.ValueLowerCase,
-          csUser.Player,
-          (key, existing) => csUser.Player);
+          player,
+          (key, existing) => player);
 
     }
 
   }
 
-  public void RemovePlayer(Nickname nickname) {
+  public void ClearPlayer(Nickname nickname) {
     Players.TryRemove(nickname.ValueLowerCase, out Player? outPlayer);
   }
 
   public async Task<IReadOnlyList<string>> GetPlayerNicknamesInBigQuadrantOf(Player player, CancellationToken cancellationToken = default) {
     var players = new List<string>();
-    var _player = await GetPlayer(player.Nickname, true, cancellationToken);
-    if (_player is null || _player.Quadrant is null) {
+    var _player = await GetPlayerAsync(player.Nickname, true, cancellationToken);
+    if (_player is null || player.Quadrant is null) {
       return players;
     }
 
-    var indexPairs = _worldMapService.GetQuadrantsIndexesAround(player.Quadrant!);
+    var indexPairs = _worldMapService.GetQuadrantsIndexesAround(player.Quadrant);
     var playersSnapshot = Players.Values;
     foreach (var pair in indexPairs) {
       var nicknames = playersSnapshot
-        .Where(ps => ps.Quadrant!.XIndex == pair.Item1 && ps.Quadrant!.YIndex == pair.Item2)
+        .Where(ps => ps.Quadrant?.XIndex == pair.Item1 && ps.Quadrant?.YIndex == pair.Item2)
         .Select(p => p.Nickname.Value);
 
       players.AddRange(nicknames);
@@ -82,20 +76,26 @@ public class PlayerService : IPlayerService {
     return players;
   }
 
-  public async Task<IEnumerable<Player>> GetPlayersInQuadrantOf(Player player, CancellationToken cancellationToken = default) {
-    var players = new List<Player>();
-    var _player = await GetPlayer(player.Nickname, true, cancellationToken);
-    if (_player is null || _player.Quadrant is null) {
-      return players;
+  public List<Player> GetPlayersInQuadrant(Quadrant quadrant) =>
+    Players.Values.Where(ps =>
+      ps.Quadrant?.XIndex == quadrant.XIndex &&
+      ps.Quadrant?.YIndex == quadrant.YIndex).ToList();
+
+  public async Task<Player?> UpdatePlayerQuadrant(Nickname nickname, Quadrant? quadrant, CancellationToken cancellationToken = default) {
+
+    var player = await GetPlayerAsync(nickname, true, cancellationToken);
+    if (player is null) {
+      return null;
     }
 
-    players.AddRange(
-      Players.Values
-        .Where(ps =>
-          ps.Quadrant!.XIndex == _player.Quadrant.XIndex &&
-          ps.Quadrant!.YIndex == _player.Quadrant.YIndex));
-
-    return players;
+    return Players.AddOrUpdate(
+      nickname.ValueLowerCase,
+      player,
+      (key, existing) =>
+        {
+          existing.Quadrant = quadrant;
+          return existing;
+        });
 
   }
 

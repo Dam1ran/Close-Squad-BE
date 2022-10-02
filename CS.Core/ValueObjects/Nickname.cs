@@ -4,20 +4,13 @@ using CS.Core.Exceptions;
 namespace CS.Core.ValueObjects;
 public class Nickname : ValuesObject {
   protected Nickname() {}
-  public Nickname(string nickname) {
-    Match match = (new Regex(RegexPattern)).Match(nickname);
-    if (
-      !match.Success ||
-      match.Index != 0 ||
-      match.Length != nickname.Length ||
-      nickname.Length < MinLength ||
-      nickname.Length > MaxLength)
-    {
-      throw new DomainValidationException($"{nameof(nickname)} does not match regex.");
+  public Nickname(string nicknameValue) {
+    if (IsWrongNickname(nicknameValue)) {
+      throw new DomainValidationException($"{nameof(nicknameValue)} does not match regex.");
     }
 
-    Value = nickname;
-    ValueLowerCase = nickname.ToLowerInvariant();
+    Value = nicknameValue;
+    ValueLowerCase = nicknameValue.ToLowerInvariant();
   }
   public const int MinLength = 4;
   public const int MaxLength = 20;
@@ -29,6 +22,29 @@ public class Nickname : ValuesObject {
 
   protected override IEnumerable<object> GetEqualityComponents() {
     yield return Value;
+  }
+
+  public static bool IsWrongNickname(string nicknameValue, out Nickname? nickname) {
+    if (IsWrongNickname(nicknameValue)) {
+      nickname = null;
+      return true;
+    }
+
+    nickname = new Nickname(nicknameValue);
+    return false;
+
+  }
+
+  public static bool IsWrongNickname(string nicknameValue) {
+    Match match = (new Regex(RegexPattern)).Match(nicknameValue);
+
+    return
+      !match.Success ||
+      match.Index != 0 ||
+      match.Length != nicknameValue.Length ||
+      nicknameValue.Length < MinLength ||
+      nicknameValue.Length > MaxLength;
+
   }
 
 }

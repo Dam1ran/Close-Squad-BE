@@ -47,8 +47,7 @@ public class CsUserConfiguration : EntityConfiguration<CsUser> {
     builder
       .HasOne(csu => csu.Player)
       .WithOne()
-      .HasForeignKey<Player>("csUserId")
-      .IsRequired();
+      .HasForeignKey<Player>("csUserId");
 
   }
 

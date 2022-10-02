@@ -2,110 +2,105 @@ using System.Text.RegularExpressions;
 using CS.Api.Communications.Models;
 using CS.Api.Communications.Models.Enums;
 using CS.Core.Entities;
-using CS.Core.Exceptions;
 using CS.Core.ValueObjects;
 using Microsoft.AspNetCore.SignalR;
 
 namespace CS.Api.Communications;
-internal partial class MainHub : Hub {
-  private async Task SendCurrentPlayer() {
-    var storedPlayer = await _playerService.GetPlayer(new Nickname(Context.UserIdentifier!));
-    await Clients.Caller.SendAsync("SetCurrentPlayer", PlayerDto.FromPlayer(storedPlayer!, Context.UserIdentifier!));
+public partial class MainHub : Hub<ITypedHubClient> {
+
+  private async Task SendPlayerCharacters(Player player) {
+    var characters = await _characterService.GetCharactersOf(player);
+    await Clients.Caller.SetCharacters(characters.Select(c => CharacterDto.FromCharacter(c)));
   }
 
-  private async Task SendSystemChatMessage (string text) {
-    await Clients.Caller.SendAsync("ReceiveChatMessage",
+  private async Task SendSystemChatMessage(string text) {
+    await Clients.Caller.ReceiveChatMessage(
       new ChatMessage {
         Type = ChatMessageType.General,
         Text = text,
-        ChatPlayer = new () { Id = -1, Nickname = "*System*", ClanName = "System", ClanIcon = "✳" }
+        ChatPlayerDto = new () { Id = -1, Nickname = "*System*", ClanName = "System", ClanIcon = "✳" }
       });
 
   }
 
-  private async Task ProcessNearbyMessage(ChatMessage chatMessage) {
-    var currentPlayer = await GetCurrentPlayer();
-    var players = await _playerService.GetPlayerNicknamesInBigQuadrantOf(currentPlayer!);
+  private async Task ProcessNearbyMessage(Player player, ChatMessage chatMessage) {
+    var players = await _playerService.GetPlayerNicknamesInBigQuadrantOf(player);
 
-    await Clients.Users(players).SendAsync("ReceiveChatMessage", new ChatMessage {
+    await Clients.Users(players).ReceiveChatMessage(new ChatMessage {
       Type = ChatMessageType.Nearby,
       Text = chatMessage.Text,
-      ChatPlayer = ChatPlayerDto.FromPlayer((currentPlayer!))
+      ChatPlayerDto = ChatPlayerDto.FromPlayer(player)
     });
 
   }
 
-  private async Task ProcessWhisperMessage(ChatMessage chatMessage) {
+  private async Task ProcessWhisperMessage(Player player, ChatMessage chatMessage) {
     var nicknameValue = chatMessage.Text.Split(" ")[0];
     if (string.IsNullOrWhiteSpace(nicknameValue)) {
       return;
     }
 
-    Nickname nickname;
-    try {
-      nickname = new Nickname(nicknameValue);
-    } catch (DomainValidationException) {
+    if (Nickname.IsWrongNickname(nicknameValue, out Nickname? nickname)) {
       await SendSystemChatMessage("Wrong nickname.");
       return;
     }
 
-    var player = await _playerService.GetPlayer(nickname, false);
-    if (player is null) {
-      await SendSystemChatMessage($"{nickname.Value} offline.");
+    var playerTo = await _playerService.GetPlayerAsync(nickname!, false);
+    if (playerTo is null) {
+      await SendSystemChatMessage($"{nickname!.Value} offline.");
       return;
     }
 
-    if (nickname.ValueLowerCase == Context.UserIdentifier!.ToLowerInvariant()) {
+    if (nickname!.ValueLowerCase == Context.UserIdentifier!.ToLowerInvariant()) {
       return;
     }
 
     var text = Regex.Replace(chatMessage.Text, $"^{nickname.Value} ", "");
-    await Clients.User(player.Nickname.Value).SendAsync("ReceiveChatMessage", new ChatMessage {
+    await Clients.User(playerTo.Nickname.Value).ReceiveChatMessage(new ChatMessage {
       Type = ChatMessageType.Whisper,
       Text = $" -> {text}",
-      ChatPlayer = ChatPlayerDto.FromPlayer((await GetCurrentPlayer())!)
+      ChatPlayerDto = ChatPlayerDto.FromPlayer(player)
     });
 
-    await Clients.Caller.SendAsync("ReceiveChatMessage", new ChatMessage {
+    await Clients.Caller.ReceiveChatMessage(new ChatMessage {
       Type = ChatMessageType.Whisper,
       Text = $" -> {nickname.Value}: {text}",
-      ChatPlayer = ChatPlayerDto.FromPlayer((await GetCurrentPlayer())!)
+      ChatPlayerDto = ChatPlayerDto.FromPlayer(player)
     });
 
   }
 
-  private async Task ProcessPartyMessage(ChatMessage chatMessage) {
+  private async Task ProcessPartyMessage(Player player, ChatMessage chatMessage) {
     
   }
-  private async Task ProcessClanMessage(ChatMessage chatMessage) {
+  private async Task ProcessClanMessage(Player player, ChatMessage chatMessage) {
     
   }
-  private async Task ProcessShoutMessage(ChatMessage chatMessage) {
-    await Clients.All.SendAsync("ReceiveChatMessage", new ChatMessage {
+  private async Task ProcessShoutMessage(Player player, ChatMessage chatMessage) {
+    await Clients.All.ReceiveChatMessage(new ChatMessage {
       Type = ChatMessageType.Shout,
       Text = chatMessage.Text,
-      ChatPlayer = ChatPlayerDto.FromPlayer((await GetCurrentPlayer())!)
+      ChatPlayerDto = ChatPlayerDto.FromPlayer(player)
     });
   }
 
-  private async Task SendNearbyGroup(bool toSelf = true) {
-    var currentPlayer = await GetCurrentPlayer();
-    var players = await _playerService.GetPlayersInQuadrantOf(currentPlayer!);
-    if (toSelf) {
-      await Clients.Caller.SendAsync("NearbyGroup", players.Where(p => p.Id != currentPlayer!.Id).Select(p => ChatPlayerDto.FromPlayer(p)));
-    }
-
-    var playersExceptCaller = players.Where(p => p.Id != currentPlayer!.Id || toSelf);
-    foreach (var player in playersExceptCaller) {
-      await Clients.User(player.Nickname.Value)
-        .SendAsync(
-          "NearbyGroup",
-          playersExceptCaller.Where(p => p.Id != player.Id).Select(p => ChatPlayerDto.FromPlayer(p))
-        );
+  private async Task SendOthersLeavingQuadrant(Player player) {
+    var playersExceptCaller = _playerService.GetPlayersInQuadrant(player.Quadrant!).Where(p => p.Id != player.Id);
+    foreach (var _player in playersExceptCaller) {
+      await Clients.User(_player.Nickname.Value)
+        .SetNearbyGroup(playersExceptCaller.Where(p => p.Id != _player.Id).Select(p => ChatPlayerDto.FromPlayer(p)));
     }
   }
 
-  private async Task<Player?> GetCurrentPlayer() => await _playerService.GetPlayer(new Nickname(Context.UserIdentifier!));
+  private async Task SendEnteringQuadrant(Player player) {
+    var players = _playerService.GetPlayersInQuadrant(player.Quadrant!);
+    foreach (var _player in players) {
+      await Clients.User(_player.Nickname.Value)
+        .SetNearbyGroup(players.Where(p => p.Id != _player.Id).Select(p => ChatPlayerDto.FromPlayer(p)));
+    }
+  }
+
+  private async Task<Player?> GetCurrentPlayer() => await _playerService.GetPlayerAsync(new Nickname(Context.UserIdentifier!));
 
   private async Task<Boolean> IsBanned() {
     var currentUser = new { IsBanned = false }; // TODO

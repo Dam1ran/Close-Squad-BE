@@ -1,3 +1,14 @@
+clear mechanism for logout
+character movement
+
+/// push XII
+
+started stats work
+cleanups
+player jump and infra
+character creation and infra
+world map works
+
 /// push XII
 
 player service

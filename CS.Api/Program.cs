@@ -130,6 +130,7 @@ builder.Services.AddDbContext<Context>(o => {
 
 
 builder.Services.AddSingleton<IPlayerService, PlayerService>();
+builder.Services.AddSingleton<ICharacterService, CharacterService>();
 builder.Services.AddSingleton<IWorldMapService, WorldMapService>();
 
 builder.Services.AddSingleton<ITickService, TickService>();

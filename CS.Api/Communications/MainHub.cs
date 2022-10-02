@@ -10,22 +10,29 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 
 namespace CS.Api.Communications;
-internal partial class MainHub : Hub {
+public partial class MainHub : Hub<ITypedHubClient> {
 
   private readonly ILogger<MainHub> _logger;
   private readonly ICacheService _cacheService;
   private readonly IPlayerService _playerService;
+  private readonly ICharacterService _characterService;
 
   public MainHub(
     ILogger<MainHub> logger,
     ICacheService cacheService,
-    IPlayerService playerService) {
+    IPlayerService playerService,
+    ICharacterService characterService) {
     _logger = Check.NotNull(logger, nameof(logger));
     _cacheService = Check.NotNull(cacheService, nameof(cacheService));
     _playerService = Check.NotNull(playerService, nameof(playerService));
+    _characterService = Check.NotNull(characterService, nameof(characterService));
   }
 
   public async Task SendChatMessage(ChatMessage chatMessage) {
+    var currentPlayer = await GetCurrentPlayer();
+    if (currentPlayer is null) {
+      return;
+    }
 
     if (await IsBanned()) {
       await SendSystemChatMessage("User banned.");
@@ -81,23 +88,23 @@ internal partial class MainHub : Hub {
 
     switch (chatMessage.Type) {
       case ChatMessageType.Nearby: {
-        await ProcessNearbyMessage(chatMessage);
+        await ProcessNearbyMessage(currentPlayer, chatMessage);
         return;
       }
       case ChatMessageType.Whisper: {
-        await ProcessWhisperMessage(chatMessage);
+        await ProcessWhisperMessage(currentPlayer, chatMessage);
         return;
       }
       case ChatMessageType.Party: {
-        await ProcessPartyMessage(chatMessage);
+        await ProcessPartyMessage(currentPlayer, chatMessage);
         return;
       }
       case ChatMessageType.Clan: {
-        await ProcessClanMessage(chatMessage);
+        await ProcessClanMessage(currentPlayer, chatMessage);
         return;
       }
       case ChatMessageType.Shout: {
-        await ProcessShoutMessage(chatMessage);
+        await ProcessShoutMessage(currentPlayer, chatMessage);
         return;
       }
       default: return;
@@ -116,16 +123,64 @@ internal partial class MainHub : Hub {
   // }
 
   public override async Task OnConnectedAsync() {
-    await SendCurrentPlayer();
-    await SendNearbyGroup();
+
+    var currentPlayer = await GetCurrentPlayer();
+    if (currentPlayer is null) {
+      await SendSystemChatMessage("Create a character to use chat.");
+    } else {
+      await SendPlayerCharacters(currentPlayer);
+    }
+
     await base.OnConnectedAsync();
   }
 
   public override async Task OnDisconnectedAsync(Exception? exception) {
-    await SendNearbyGroup(false);
-    _playerService.RemovePlayer(new Nickname(Context.UserIdentifier!));
+    var currentPlayer = await GetCurrentPlayer();
+    if (currentPlayer?.Quadrant is not null) {
+      await SendOthersLeavingQuadrant(currentPlayer);
+    }
+    _playerService.ClearPlayer(new Nickname(Context.UserIdentifier!)); // add delay for reconnect scenario to cancel removing
+    // clear characters // add delay for reconnect scenario to cancel removing
     await SendSystemChatMessage("Disconnected.");
     await base.OnDisconnectedAsync(exception);
+  }
+
+
+  public async Task PlayerJumpTo(string characterNicknameValue) {
+    var currentPlayer = await GetCurrentPlayer();
+    if (currentPlayer is null || Nickname.IsWrongNickname(characterNicknameValue, out Nickname? characterNickname)) {
+      return;
+    }
+
+    var characterQuadrant = _characterService.GetCharacterQuadrant(currentPlayer.Nickname, characterNickname!);
+    if (characterQuadrant is null || currentPlayer.Quadrant?.Id == characterQuadrant.Id) {
+      return;
+    }
+
+    if (currentPlayer.Quadrant is not null) {
+      await SendOthersLeavingQuadrant(currentPlayer);
+    }
+
+    var jumpedPlayer = (await _playerService.UpdatePlayerQuadrant(currentPlayer.Nickname, characterQuadrant))!;
+    await Clients.Caller.SetCurrentPlayer(PlayerDto.FromPlayer(jumpedPlayer));
+    await SendEnteringQuadrant(jumpedPlayer);
+
+  }
+
+  public async Task PlayerLeaveQuadrant() {
+    var currentPlayer = await GetCurrentPlayer();
+    if (currentPlayer is null) {
+      return;
+    }
+
+    if (currentPlayer.Quadrant is not null) {
+      await SendOthersLeavingQuadrant(currentPlayer);
+    }
+
+    await Clients.Caller.SetNearbyGroup(Enumerable.Empty<ChatPlayerDto>());
+    var player = (await _playerService.UpdatePlayerQuadrant(currentPlayer.Nickname, null))!;
+    await Clients.Caller.SetCurrentPlayer(PlayerDto.FromPlayer(player));
+
   }
 
 }

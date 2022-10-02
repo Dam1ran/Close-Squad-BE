@@ -13,7 +13,10 @@ public class Context : DbContext, IContext {
   public Context(DbContextOptions<Context> options) : base(options) { }
 
   public DbSet<CsUser> CsUsers { get; set; } = null!;
+  public DbSet<Player> Players { get; set; } = null!;
   public DbSet<Quadrant> Quadrants { get; set; } = null!;
+  public DbSet<Character> Characters { get; set; } = null!;
+
   public DbSet<ServerAnnouncement> ServerAnnouncements { get; set; } = null!;
 
   public bool HasActiveTransaction => _currentTransaction != null;

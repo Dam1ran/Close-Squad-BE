@@ -5,6 +5,7 @@ namespace CS.Api.Support.Extensions;
 public static class RepositoriesServiceCollectionExtensions {
   public static IServiceCollection AddRepositories(this IServiceCollection services) =>
     services
-      .AddScoped<ICsUserRepository, CsUserRepository>();
+      .AddScoped<ICsUserRepository, CsUserRepository>()
+      .AddScoped<IPlayerRepository, PlayerRepository>();
 
 }

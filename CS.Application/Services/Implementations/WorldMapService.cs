@@ -3,6 +3,7 @@ using CS.Application.Options.Abstractions;
 using CS.Application.Persistence.Abstractions;
 using CS.Application.Support.Utils;
 using CS.Core.Entities;
+using CS.Core.Enums;
 using CS.Core.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -60,12 +61,14 @@ public class WorldMapService : IWorldMapService {
 
   }
 
-  public async Task<Quadrant> GetStartingQuadrantAsync(CancellationToken cancellationToken) {
+  public async Task<Quadrant> GetStartingQuadrantAsNoTrackingAsync(CharacterRace characterRace, CharacterClass characterClass, CancellationToken cancellationToken) {
+    // TODO race/type considerations
     using (var scope = _serviceProvider.CreateScope()) {
       var _context = scope.ServiceProvider.GetRequiredService<IContext>();
 
       var quadrant =
         await _context.Quadrants
+          .AsNoTracking()
           .SingleOrDefaultAsync(q => q.XIndex == _worldMapOptions.XStartingQuadrant && q.YIndex == _worldMapOptions.YStartingQuadrant, cancellationToken);
 
       if (quadrant is null) {

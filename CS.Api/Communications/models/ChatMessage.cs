@@ -4,5 +4,5 @@ namespace CS.Api.Communications.Models;
 public class ChatMessage {
   public ChatMessageType Type {get; set;} = ChatMessageType.Nearby;
   public string Text { get; set; } = "";
-  public ChatPlayerDto? ChatPlayer { get; set; }
+  public ChatPlayerDto? ChatPlayerDto { get; set; }
 }

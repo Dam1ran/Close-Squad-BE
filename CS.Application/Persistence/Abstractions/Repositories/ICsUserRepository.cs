@@ -16,8 +16,6 @@ public interface ICsUserRepository: IRepository {
   public Task<CsUser?> FindByEmailAsync(Email email, CancellationToken cancellationToken);
   public Task<CsUser?> FindByEmailWithAuthAsync(Email email, CancellationToken cancellationToken);
 
-  public Task<CsUser?> FindByNicknameWithPlayerQuadrantAsync(Nickname nickname, CancellationToken cancellationToken);
-
   public Task AddAsync(CsUser csUser, CancellationToken cancellationToken);
   public void Update(CsUser csUser);
 
