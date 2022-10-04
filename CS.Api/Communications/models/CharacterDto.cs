@@ -6,8 +6,9 @@ public class CharacterDto {
   public long Id { get; set; }
   public string Nickname { get; set; } = "";
   public int Level { get; set; }
-  public bool IsAwake { get; set; }
+
   public CharacterClass CharacterClass { get; set; }
+  public CharacterStatus CharacterStatus { get; set; }
 
   public uint MaxHP { get; set; }
   public uint HP { get; set; }
@@ -23,7 +24,7 @@ public class CharacterDto {
       Nickname = character.Nickname.Value,
       Level = character.Level,
       CharacterClass = character.CharacterClass,
-      IsAwake = character.IsAwake,
+      CharacterStatus = character.CharacterStatus,
       MaxHP = character.MaxHP,
       HP = character.HP,
       MaxMP = character.MaxMP,

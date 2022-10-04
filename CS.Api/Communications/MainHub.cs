@@ -183,4 +183,47 @@ public partial class MainHub : Hub<ITypedHubClient> {
 
   }
 
+  public async Task CharacterToggle(string characterNicknameValue) {
+    if (Nickname.IsWrongNickname(characterNicknameValue, out Nickname? characterNickname)) {
+      return;
+    }
+
+    var currentPlayer = await GetCurrentPlayer();
+    if (currentPlayer is null) {
+      return;
+    }
+
+    var character = _characterService.Toggle(currentPlayer.Nickname, characterNickname!);
+    if (character is not null) {
+      if (currentPlayer.Quadrant?.Id == character.Quadrant.Id) {
+        await PlayerLeaveQuadrant();
+      }
+
+      await Clients.Caller.UpdateCharacter(new { Id = character.Id, CharacterStatus = character.CharacterStatus });
+    }
+
+
+  }
+
+  public async Task CharacterTravelTo(CharacterTravelCall characterTravelCall) {
+    if (Nickname.IsWrongNickname(characterTravelCall.CharacterNickname, out Nickname? characterNickname)) {
+      return;
+    }
+
+    var currentPlayer = await GetCurrentPlayer();
+    if (currentPlayer is null) {
+      return;
+    }
+
+    var travelingCharacter = await _characterService.SetTraveling(currentPlayer, characterNickname!);
+    if (travelingCharacter is null) {
+      return;
+    }
+
+    // await _characterManager.
+
+    await Clients.Caller.UpdateCharacter(new { Id = travelingCharacter.Id, CharacterStatus = travelingCharacter.CharacterStatus });
+
+  }
+
 }

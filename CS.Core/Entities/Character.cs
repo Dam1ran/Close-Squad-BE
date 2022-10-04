@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations.Schema;
 using CS.Core.Entities.Abstractions;
 using CS.Core.Enums;
 using CS.Core.ValueObjects;
@@ -25,7 +26,9 @@ public class Character : EntityStats {
   public CharacterRace CharacterRace { get; set; }
   public CharacterClass CharacterClass { get; set; }
 
-  public bool IsAwake { get; set; }
+  [NotMapped]
+  public CharacterStatus CharacterStatus { get; set; }
+
   public Quadrant Quadrant { get; set; }
   public Player Player { get; set; } = null!;
 

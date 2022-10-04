@@ -61,23 +61,4 @@ public class CharacterController : ControllerBase {
     return NoContent();
   }
 
-  [HttpPatch("Toggle")]
-  [LimitRequests(TimeWindowInSeconds = Core_TimeConstants._1_Minute_InSeconds, MaxRequests = 18, By = LimitRequestsType.NicknameCredentialAndEndpoint)]
-  [ProducesDefaultResponseType]
-  [ProducesResponseType(StatusCodes.Status204NoContent)]
-  [ProducesResponseType(StatusCodes.Status400BadRequest)]
-  public async Task<IActionResult> Toggle(CharacterToggleRequestDto characterToggleRequestDto, CancellationToken cancellationToken) {
-
-    var playerNickname = new Nickname((User.Identity as ClaimsIdentity)!.FindFirst("nickname")!.Value);
-    var characterNickname = new Nickname(characterToggleRequestDto.Nickname);
-
-    var character = _characterService.Toggle(playerNickname, characterNickname, cancellationToken);
-    if (character is not null) {
-      await _mainHubContext.Clients.User(playerNickname.Value).UpdateCharacter(new { Id = character.Id, IsAwake = character.IsAwake });
-    }
-
-    return NoContent();
-
-  }
-
 }

@@ -105,12 +105,25 @@ public class CharacterService : ICharacterService {
 
     if (Characters.TryGetValue(playerNickname.ValueLowerCase, out ConcurrentDictionary<string, Character>? characters)) {
       if (characters.TryGetValue(characterNickname.ValueLowerCase, out Character? character)) {
+
+        if (character.CharacterStatus == CharacterStatus.Engaged) {
+          return character;
+        }
+
         return characters.AddOrUpdate(characterNickname.ValueLowerCase, character, (key, existing) =>
         {
-          existing.IsAwake = !existing.IsAwake;
+          existing.CharacterStatus
+            = character.CharacterStatus != CharacterStatus.Astray
+            ? CharacterStatus.Astray
+            : character.HP > 0
+            ? CharacterStatus.Awake
+            : CharacterStatus.Dead;
+
           return existing;
         });
+
       }
+
     }
 
     return null;
@@ -142,5 +155,41 @@ public class CharacterService : ICharacterService {
     return null;
 
   }
+
+  public async Task<Character?> GetCharacterOf(Player player, Nickname characterNickname, CancellationToken cancellationToken = default) =>
+    (await GetCharactersOf(player, cancellationToken)).SingleOrDefault(c => c.Nickname.ValueLowerCase == characterNickname.ValueLowerCase);
+
+  public async Task<Character?> SetTraveling(Player player, Nickname characterNickname, CancellationToken cancellationToken = default) {
+    var characterToUpdate = await GetCharacterOf(player, characterNickname, cancellationToken);
+    if (characterToUpdate is null) {
+      return null;
+    }
+
+    if (Characters.TryGetValue(player.Nickname.ValueLowerCase, out ConcurrentDictionary<string, Character>? characters)) {
+
+      if (!IsAllowedToTravel(characterToUpdate)) {
+        return characterToUpdate;
+      }
+
+      var updatedCharacter =
+        characters.AddOrUpdate(
+          characterNickname.ValueLowerCase,
+          characterToUpdate,
+          (key, existing) =>
+          {
+            existing.CharacterStatus = CharacterStatus.Traveling;
+            return existing;
+          }
+        );
+
+      return updatedCharacter;
+    }
+
+    return null;
+  }
+
+  private bool IsAllowedToTravel(Character character) =>
+    character.CharacterStatus == CharacterStatus.Awake;
+   // TODO: and other checks?
 
 }
