@@ -1,11 +1,14 @@
+using System.Diagnostics;
 using System.Text.RegularExpressions;
 using CS.Api.Communications.Models;
-using CS.Api.Communications.Models.Enums;
 using CS.Api.Support;
+using CS.Application.Enums;
+using CS.Application.Models;
 using CS.Application.Services.Abstractions;
 using CS.Application.Support.Constants;
 using CS.Application.Support.Utils;
-using CS.Core.ValueObjects;
+using CS.Core.Enums;
+using CS.Core.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 
@@ -16,16 +19,26 @@ public partial class MainHub : Hub<ITypedHubClient> {
   private readonly ICacheService _cacheService;
   private readonly IPlayerService _playerService;
   private readonly ICharacterService _characterService;
+  private readonly ICharacterEngine _characterEngine;
+  private readonly IWorldMapService _worldMapService;
+  private readonly IHubService _hubService;
 
   public MainHub(
     ILogger<MainHub> logger,
     ICacheService cacheService,
     IPlayerService playerService,
-    ICharacterService characterService) {
+    ICharacterService characterService,
+    ICharacterEngine characterEngine,
+    IWorldMapService worldMapService,
+    IHubService hubService)
+  {
     _logger = Check.NotNull(logger, nameof(logger));
     _cacheService = Check.NotNull(cacheService, nameof(cacheService));
     _playerService = Check.NotNull(playerService, nameof(playerService));
     _characterService = Check.NotNull(characterService, nameof(characterService));
+    _characterEngine = Check.NotNull(characterEngine, nameof(characterEngine));
+    _worldMapService = Check.NotNull(worldMapService, nameof(worldMapService));
+    _hubService = Check.NotNull(hubService, nameof(hubService));
   }
 
   public async Task SendChatMessage(ChatMessage chatMessage) {
@@ -126,8 +139,11 @@ public partial class MainHub : Hub<ITypedHubClient> {
 
     var currentPlayer = await GetCurrentPlayer();
     if (currentPlayer is null) {
+      // do a dialog on FE
       await SendSystemChatMessage("Create a character to use chat.");
     } else {
+      currentPlayer = _playerService.ClearLogoutTime(currentPlayer);
+      await _hubService.SetCurrentPlayer(currentPlayer);
       await SendPlayerCharacters(currentPlayer);
     }
 
@@ -135,36 +151,42 @@ public partial class MainHub : Hub<ITypedHubClient> {
   }
 
   public override async Task OnDisconnectedAsync(Exception? exception) {
+
     var currentPlayer = await GetCurrentPlayer();
-    if (currentPlayer?.Quadrant is not null) {
-      await SendOthersLeavingQuadrant(currentPlayer);
+    if (currentPlayer is not null) {
+      if (currentPlayer.QuadrantIndex.HasValue) {
+        await _hubService.SendAllUpdateQuadrantPlayerList(currentPlayer);
+        currentPlayer = _playerService.UpdatePlayerQuadrant(currentPlayer, null);
+      }
+
+      _playerService.SetLogoutTime(currentPlayer);
     }
-    _playerService.ClearPlayer(new Nickname(Context.UserIdentifier!)); // add delay for reconnect scenario to cancel removing
-    // clear characters // add delay for reconnect scenario to cancel removing
+
     await SendSystemChatMessage("Disconnected.");
     await base.OnDisconnectedAsync(exception);
   }
 
 
-  public async Task PlayerJumpTo(string characterNicknameValue) {
+  public async Task PlayerJumpTo(CharacterCall characterCall) {
     var currentPlayer = await GetCurrentPlayer();
-    if (currentPlayer is null || Nickname.IsWrongNickname(characterNicknameValue, out Nickname? characterNickname)) {
+    if (currentPlayer is null) {
       return;
     }
 
-    var characterQuadrant = _characterService.GetCharacterQuadrant(currentPlayer.Nickname, characterNickname!);
-    if (characterQuadrant is null || currentPlayer.Quadrant?.Id == characterQuadrant.Id) {
+    var character = _characterService.GetCharacterOf(currentPlayer, characterCall.CharacterId);
+    if (character is null) {
       return;
     }
 
-    if (currentPlayer.Quadrant is not null) {
-      await SendOthersLeavingQuadrant(currentPlayer);
+    if (currentPlayer.QuadrantIndex == character!.QuadrantIndex) {
+      return;
     }
 
-    var jumpedPlayer = (await _playerService.UpdatePlayerQuadrant(currentPlayer.Nickname, characterQuadrant))!;
-    await Clients.Caller.SetCurrentPlayer(PlayerDto.FromPlayer(jumpedPlayer));
-    await SendEnteringQuadrant(jumpedPlayer);
+    await _hubService.SendAllUpdateQuadrantPlayerList(currentPlayer);
 
+    var jumpedPlayer = _playerService.UpdatePlayerQuadrant(currentPlayer, character.QuadrantIndex);
+    await _hubService.SetCurrentPlayer(jumpedPlayer);
+    await _hubService.SendAllUpdateQuadrantPlayerList(jumpedPlayer, true);
   }
 
   public async Task PlayerLeaveQuadrant() {
@@ -173,40 +195,37 @@ public partial class MainHub : Hub<ITypedHubClient> {
       return;
     }
 
-    if (currentPlayer.Quadrant is not null) {
-      await SendOthersLeavingQuadrant(currentPlayer);
-    }
+    await _hubService.SendAllUpdateQuadrantPlayerList(currentPlayer);
 
     await Clients.Caller.SetNearbyGroup(Enumerable.Empty<ChatPlayerDto>());
-    var player = (await _playerService.UpdatePlayerQuadrant(currentPlayer.Nickname, null))!;
-    await Clients.Caller.SetCurrentPlayer(PlayerDto.FromPlayer(player));
-
+    var player = _playerService.UpdatePlayerQuadrant(currentPlayer, null);
+    await _hubService.SetCurrentPlayer(player);
   }
 
-  public async Task CharacterToggle(string characterNicknameValue) {
-    if (Nickname.IsWrongNickname(characterNicknameValue, out Nickname? characterNickname)) {
-      return;
-    }
-
+  public async Task CharacterToggle(CharacterCall characterCall) {
     var currentPlayer = await GetCurrentPlayer();
     if (currentPlayer is null) {
       return;
     }
 
-    var character = _characterService.Toggle(currentPlayer.Nickname, characterNickname!);
-    if (character is not null) {
-      if (currentPlayer.Quadrant?.Id == character.Quadrant.Id) {
+    var character = _characterService.GetCharacterOf(currentPlayer, characterCall.CharacterId);
+    if (character is null) {
+      return;
+    }
+
+    var toggledCharacter = _characterService.Toggle(currentPlayer, character);
+    if (toggledCharacter is not null) {
+      if (currentPlayer?.QuadrantIndex == toggledCharacter.QuadrantIndex) {
         await PlayerLeaveQuadrant();
       }
 
-      await Clients.Caller.UpdateCharacter(new { Id = character.Id, CharacterStatus = character.CharacterStatus });
+      await Clients.Caller.UpdateCharacter(new { Id = toggledCharacter.Id, CharacterStatus = toggledCharacter.CharacterStatus });
     }
-
 
   }
 
   public async Task CharacterTravelTo(CharacterTravelCall characterTravelCall) {
-    if (Nickname.IsWrongNickname(characterTravelCall.CharacterNickname, out Nickname? characterNickname)) {
+    if (!Enum.IsDefined(typeof(TravelDirection), characterTravelCall.TravelDirection)) {
       return;
     }
 
@@ -215,14 +234,26 @@ public partial class MainHub : Hub<ITypedHubClient> {
       return;
     }
 
-    var travelingCharacter = await _characterService.SetTraveling(currentPlayer, characterNickname!);
+    var character = _characterService.GetCharacterOf(currentPlayer, characterTravelCall.CharacterId);
+    if (character is null || !character.CanTravel()) {
+      return;
+    }
+    var characterStatus = character.CharacterStatus;
+
+    var travelingCharacter = _characterService.Update(currentPlayer, character, (key, existing) =>
+    {
+      existing.CharacterStatus = CharacterStatus.Traveling;
+      return existing;
+    });
     if (travelingCharacter is null) {
       return;
     }
 
-    // await _characterManager.
-
     await Clients.Caller.UpdateCharacter(new { Id = travelingCharacter.Id, CharacterStatus = travelingCharacter.CharacterStatus });
+
+    if (characterStatus != travelingCharacter.CharacterStatus && travelingCharacter.CharacterStatus == CharacterStatus.Traveling) {
+      var secondsToTravel = _characterEngine.TravelTo(characterTravelCall.TravelDirection, travelingCharacter, currentPlayer);
+    }
 
   }
 

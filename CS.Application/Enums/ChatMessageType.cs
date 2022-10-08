@@ -1,4 +1,4 @@
-namespace CS.Api.Communications.Models.Enums;
+namespace CS.Application.Enums;
 public enum ChatMessageType {
   General = 0,
   Nearby = 1,

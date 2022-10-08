@@ -20,6 +20,7 @@ public class TESTNAHUI {
     throw new NotFoundException("SUK");
   }
   private void update(object? sender, EventArgs e) {
+    // Interlocked.Increment(ref counter);
     counter++;
     // _logger.LogWarning("UPDATED");
     if (counter > 10) {

@@ -1,4 +1,4 @@
-namespace CS.Application.Enums;
+namespace CS.Core.Enums;
 public enum TravelDirection {
   N = 1,
   NE = 2,

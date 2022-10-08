@@ -1,0 +1,6 @@
+[
+  { "Index": 0, "Area": "A0", "Name": "N0", "SpeedModifier": 1.5 },
+  { "Index": 1, "Area": "A1", "Name": "N1", "SpeedModifier": 0.5 },
+  { "Index": 2, "Area": "A2", "Name": "N2", "SpeedModifier": 1.0 },
+  { "Index": 3, "Area": "A3", "Name": "N3", "SpeedModifier": 2.0 }
+]

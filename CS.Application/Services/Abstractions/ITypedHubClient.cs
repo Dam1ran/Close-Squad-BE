@@ -1,6 +1,6 @@
-using CS.Api.Communications.Models;
+using CS.Application.Models;
 
-namespace CS.Api.Communications;
+namespace CS.Application.Services.Abstractions;
 public interface ITypedHubClient {
 
   Task SetCurrentPlayer(PlayerDto playerDto);

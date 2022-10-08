@@ -19,6 +19,12 @@
     <EmbeddedResource Include="Support\Email\AccountLockedOutEmailTemplate.html" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="Files\**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>

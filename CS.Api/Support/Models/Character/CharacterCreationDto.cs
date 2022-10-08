@@ -12,10 +12,6 @@ public class CharacterCreationDto {
   public string Nickname { get; set; } = string.Empty;
 
   [Required]
-  [Enum(typeof(CharacterRace))]
-  public CharacterRace CharacterRace { get; set; }
-
-  [Required]
   [Enum(typeof(CharacterClass))]
   public CharacterClass CharacterClass { get; set; }
 

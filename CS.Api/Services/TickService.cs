@@ -7,6 +7,8 @@ public class TickService : ITickService
   public event EventHandler? on_200ms_tick;
   public event EventHandler? on_500ms_tick;
   public event EventHandler? on_1000ms_tick;
+  public event EventHandler? on_60s_tick;
+  public event EventHandler? on_300s_tick;
 
   private readonly PeriodicTimer _100ms_timer = new(TimeSpan.FromMilliseconds(100));
 
@@ -15,7 +17,7 @@ public class TickService : ITickService
   }
 
   private async void Ticker() {
-    byte counter = 0;
+    int counter = 0;
     while (await _100ms_timer.WaitForNextTickAsync()) {
       counter++;
       if (counter % 1 == 0) {
@@ -29,6 +31,12 @@ public class TickService : ITickService
       }
       if (counter % 10 == 0) {
         on_1000ms_tick?.Invoke(this, EventArgs.Empty);
+      }
+      if (counter % 600 == 0) {
+        on_60s_tick?.Invoke(this, EventArgs.Empty);
+      }
+      if (counter % 3000 == 0) {
+        on_300s_tick?.Invoke(this, EventArgs.Empty);
         counter = 0;
       }
     };

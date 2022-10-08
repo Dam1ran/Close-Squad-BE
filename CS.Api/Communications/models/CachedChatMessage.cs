@@ -1,4 +1,4 @@
-using CS.Api.Communications.Models.Enums;
+using CS.Application.Enums;
 
 namespace CS.Api.Communications.Models;
 public class CachedChatMessage {

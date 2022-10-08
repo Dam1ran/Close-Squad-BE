@@ -46,7 +46,7 @@ public class CaptchaService : ICaptchaService {
 
     graphics.Dispose();
 
-    var memoryStream = new MemoryStream();
+    using var memoryStream = new MemoryStream();
     bitmap.Save(memoryStream, ImageFormat.Png);
     return new Application.Models.Image("captcha.png", memoryStream);
   }

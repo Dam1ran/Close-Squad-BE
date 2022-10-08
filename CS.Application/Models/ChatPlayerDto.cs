@@ -1,20 +1,18 @@
 using CS.Core.Entities;
 
-namespace CS.Api.Communications.Models;
-public class PlayerDto {
+namespace CS.Application.Models;
+public class ChatPlayerDto {
   public long Id { get; set; }
   public string Nickname { get; set; } = "";
   public string ClanName { get; set; } = "";
   public string ClanIcon { get; set; } = "";
-  public long? QuadrantId { get; set; }
 
-  public static PlayerDto FromPlayer(Player player) =>
+  public static ChatPlayerDto FromPlayer(Player player) =>
     new() {
       Id = player.Id,
       Nickname = player.Nickname.Value,
       ClanName = player.ClanName,
-      ClanIcon = player.ClanIcon,
-      QuadrantId = player.Quadrant?.Id
+      ClanIcon = player.ClanIcon
     };
 
 }

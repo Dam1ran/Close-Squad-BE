@@ -21,7 +21,7 @@ public class Nickname : ValuesObject {
   public override string ToString() => Value;
 
   protected override IEnumerable<object> GetEqualityComponents() {
-    yield return Value;
+    yield return ValueLowerCase;
   }
 
   public static bool IsWrongNickname(string nicknameValue, out Nickname? nickname) {
@@ -46,5 +46,7 @@ public class Nickname : ValuesObject {
       nicknameValue.Length > MaxLength;
 
   }
+
+  public static implicit operator string(Nickname nickname) => nickname.Value;
 
 }

@@ -7,7 +7,6 @@ using CS.Core.Entities;
 using CS.Core.Enums;
 using CS.Core.Services.Interfaces;
 using CS.Core.ValueObjects;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace CS.Application.Services.Implementations;
@@ -16,9 +15,9 @@ public class CharacterService : ICharacterService {
   private readonly IServiceProvider _serviceProvider;
   private readonly IWorldMapService _worldMapService;
   private readonly IPlayerService _playerService;
-  private readonly ConcurrentDictionary<string, ConcurrentDictionary<string, Character>> Characters = new();
+  private readonly ConcurrentDictionary<long, ConcurrentDictionary<long, Character>> Characters = new();
 
-  public readonly int MaxNumberOfCharacters = Enum.GetNames(typeof(CharacterClass)).Length;
+  public static readonly int MaxNumberOfCharacters = Enum.GetNames(typeof(CharacterClass)).Length;
 
 
   public CharacterService(IServiceProvider serviceProvider, IWorldMapService worldMapService, IPlayerService playerService) {
@@ -27,25 +26,52 @@ public class CharacterService : ICharacterService {
     _playerService = Check.NotNull(playerService, nameof(playerService));
   }
 
+    public async Task Create(Player player, Nickname characterNickname, CharacterClass characterClass, byte gender, CancellationToken cancellationToken = default) {
+
+    using var scope = _serviceProvider.CreateScope();
+    var _context = scope.ServiceProvider.GetRequiredService<IContext>();
+
+    var newCharacter = new Character(
+      characterNickname,
+      characterClass,
+      _worldMapService.GetStartingQuadrantIndex(characterClass),
+      gender);
+
+    player.Characters.Add(newCharacter);
+    _context.Players.Update(player);
+    await _context.SaveChangesAsync(cancellationToken);
+
+    if (!Characters.TryGetValue(player.Id, out var characters)) {
+      characters = new ();
+    }
+
+    foreach (var character in player.Characters) {
+      characters.TryAdd(character.Id, character);
+    }
+
+    Characters.TryAdd(player.Id, characters);
+
+  }
+
   public async Task<IEnumerable<Character>> GetCharactersOf(Player player, CancellationToken cancellationToken = default) {
 
-    if (Characters.TryGetValue(player.Nickname.ValueLowerCase, out ConcurrentDictionary<string, Character>? characters)) {
+    if (Characters.TryGetValue(player.Id, out var characters)) {
       return characters.Values;
     }
 
     using (var scope = _serviceProvider.CreateScope()) {
       var _playerRepo = scope.ServiceProvider.GetRequiredService<IPlayerRepository>();
-      var repoCharacters = await _playerRepo.GetPlayerCharactersWithQuadrantAsync(player, cancellationToken);
+      var repoCharacters = await _playerRepo.GetPlayerCharactersAsync(player.Id, cancellationToken);
       if (repoCharacters.Count() == 0) {
         return Enumerable.Empty<Character>();
       }
 
-      var dict = new ConcurrentDictionary<string, Character>();
+      var dict = new ConcurrentDictionary<long, Character>();
       foreach (var character in repoCharacters) {
-        dict.TryAdd(character.Nickname.ValueLowerCase, character);
+        dict.TryAdd(character.Id, character);
       }
 
-      Characters.TryAdd(player.Nickname.ValueLowerCase, dict);
+      Characters.TryAdd(player.Id, dict);
 
       return dict.Values;
 
@@ -53,143 +79,48 @@ public class CharacterService : ICharacterService {
 
   }
 
-  public async Task<Character?> Create(Nickname playerNickname, Nickname nickname, CharacterRace characterRace, CharacterClass characterClass, byte gender, CancellationToken cancellationToken = default) {
-
-    using (var scope = _serviceProvider.CreateScope()) {
-      var _playerRepo = scope.ServiceProvider.GetRequiredService<IPlayerRepository>();
-      var _context = scope.ServiceProvider.GetRequiredService<IContext>();
-
-      var existingCharacter = await _context.Characters
-        .SingleOrDefaultAsync(c => c.Nickname.ValueLowerCase == nickname.ValueLowerCase, cancellationToken);
-
-      if (existingCharacter is not null) {
-        return null;
-      }
-
-      var startingQuadrant = await _worldMapService.GetStartingQuadrantAsNoTrackingAsync(characterRace, characterClass, cancellationToken);
-
-      var player = await _playerRepo.FindByNicknameWithCharactersAsync(playerNickname, cancellationToken);
-      if (player is null) {
-        player = new Player(playerNickname, startingQuadrant);
-      }
-
-      if (player.Characters.Count() >= MaxNumberOfCharacters) {
-        return null;
-      }
-
-      player.Quadrant = startingQuadrant;
-      var newCharacter = new Character(startingQuadrant, nickname, characterRace, characterClass, gender);
-      player.Characters.Add(newCharacter);
-      _context.Players.Update(player);
-      await _context.SaveChangesAsync(cancellationToken);
-
-      await _playerService.UpdatePlayerQuadrant(playerNickname, startingQuadrant, cancellationToken);
-
-      if (!Characters.TryGetValue(playerNickname.ValueLowerCase, out ConcurrentDictionary<string, Character>? characters)) {
-        characters = new ConcurrentDictionary<string, Character>();
-      }
-
-      foreach (var character in player.Characters) {
-        characters.TryAdd(character.Nickname.ValueLowerCase, character);
-      }
-
-      Characters.TryAdd(playerNickname.ValueLowerCase, characters);
-
-      return newCharacter;
-
-    }
-
-  }
-
-  public Character? Toggle(Nickname playerNickname, Nickname characterNickname, CancellationToken cancellationToken = default) {
-
-    if (Characters.TryGetValue(playerNickname.ValueLowerCase, out ConcurrentDictionary<string, Character>? characters)) {
-      if (characters.TryGetValue(characterNickname.ValueLowerCase, out Character? character)) {
-
-        if (character.CharacterStatus == CharacterStatus.Engaged) {
-          return character;
-        }
-
-        return characters.AddOrUpdate(characterNickname.ValueLowerCase, character, (key, existing) =>
-        {
-          existing.CharacterStatus
-            = character.CharacterStatus != CharacterStatus.Astray
-            ? CharacterStatus.Astray
-            : character.HP > 0
-            ? CharacterStatus.Awake
-            : CharacterStatus.Dead;
-
-          return existing;
-        });
-
-      }
-
+  public Character? GetCharacterOf(Player player, long id) {
+    if (Characters.TryGetValue(player.Id, out var _characters) &&
+        _characters.TryGetValue(id, out var _character))
+    {
+      return _character;
     }
 
     return null;
   }
 
-    public async Task<Player?> JumpTo(string characterNicknameValue, Player player, CancellationToken cancellationToken = default) {
-    if (Nickname.IsWrongNickname(characterNicknameValue, out Nickname? characterNickname)) {
+
+
+  public Character? Toggle(Player player, Character character) {
+    if (!Characters.TryGetValue(player.Id, out var characters)) {
       return null;
     }
 
-    if (Characters.TryGetValue(player.Nickname.ValueLowerCase, out ConcurrentDictionary<string, Character>? characters)) {
-      if (characters.TryGetValue(characterNickname!.ValueLowerCase, out Character? character)) {
-        return await _playerService.UpdatePlayerQuadrant(player.Nickname, character.Quadrant, cancellationToken);
-      }
+    if (character.CharacterStatus == CharacterStatus.Engaged) {
+      return character;
     }
 
-    return null;
+    return characters.AddOrUpdate(
+      character.Id,
+      character,
+      (key, existing) => {
+        existing.CharacterStatus
+          = character.CharacterStatus != CharacterStatus.Astray
+          ? CharacterStatus.Astray
+          : character.HP > 0
+          ? CharacterStatus.Awake
+          : CharacterStatus.Dead;
+
+        return existing;
+      });
 
   }
 
-  public Quadrant? GetCharacterQuadrant(Nickname playerNickname, Nickname characterNickname, CancellationToken cancellationToken = default) {
-
-    if (Characters.TryGetValue(playerNickname.ValueLowerCase, out ConcurrentDictionary<string, Character>? characters)) {
-      if (characters.TryGetValue(characterNickname.ValueLowerCase, out Character? character)) {
-        return character.Quadrant;
-      }
-    }
-
-    return null;
-
-  }
-
-  public async Task<Character?> GetCharacterOf(Player player, Nickname characterNickname, CancellationToken cancellationToken = default) =>
-    (await GetCharactersOf(player, cancellationToken)).SingleOrDefault(c => c.Nickname.ValueLowerCase == characterNickname.ValueLowerCase);
-
-  public async Task<Character?> SetTraveling(Player player, Nickname characterNickname, CancellationToken cancellationToken = default) {
-    var characterToUpdate = await GetCharacterOf(player, characterNickname, cancellationToken);
-    if (characterToUpdate is null) {
+  public Character? Update(Player player, Character character, Func<long, Character, Character> updateValueFactory) {
+    if (!Characters.TryGetValue(player.Id, out var characters)) {
       return null;
     }
 
-    if (Characters.TryGetValue(player.Nickname.ValueLowerCase, out ConcurrentDictionary<string, Character>? characters)) {
-
-      if (!IsAllowedToTravel(characterToUpdate)) {
-        return characterToUpdate;
-      }
-
-      var updatedCharacter =
-        characters.AddOrUpdate(
-          characterNickname.ValueLowerCase,
-          characterToUpdate,
-          (key, existing) =>
-          {
-            existing.CharacterStatus = CharacterStatus.Traveling;
-            return existing;
-          }
-        );
-
-      return updatedCharacter;
-    }
-
-    return null;
+    return characters.AddOrUpdate(character.Id, character, updateValueFactory);
   }
-
-  private bool IsAllowedToTravel(Character character) =>
-    character.CharacterStatus == CharacterStatus.Awake;
-   // TODO: and other checks?
-
 }

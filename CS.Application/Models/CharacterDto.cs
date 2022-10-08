@@ -1,7 +1,7 @@
 using CS.Core.Entities;
 using CS.Core.Enums;
 
-namespace CS.Api.Communications.Models;
+namespace CS.Application.Models;
 public class CharacterDto {
   public long Id { get; set; }
   public string Nickname { get; set; } = "";

@@ -131,6 +131,8 @@ builder.Services.AddDbContext<Context>(o => {
 
 builder.Services.AddSingleton<IPlayerService, PlayerService>();
 builder.Services.AddSingleton<ICharacterService, CharacterService>();
+builder.Services.AddSingleton<ICharacterEngine, CharacterEngine>();
+builder.Services.AddSingleton<IHubService, HubService>();
 builder.Services.AddSingleton<IWorldMapService, WorldMapService>();
 
 builder.Services.AddSingleton<ITickService, TickService>();
@@ -160,6 +162,8 @@ builder.Services.AddControllers(options => {
   options.Conventions.Add(new RouteTokenTransformerConvention(new SlugifyParameterTransformer()));
   options.Filters.Add<ValidateAntiforgeryTokenFilter>();
 });
+
+builder.Services.AddHostedService<LaunchService>();
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

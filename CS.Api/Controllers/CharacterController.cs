@@ -1,17 +1,18 @@
 using System.Security.Claims;
 using CS.Api.Communications;
-using CS.Api.Communications.Models;
 using CS.Api.Support.Attributes;
 using CS.Api.Support.Models.Character;
 using CS.Application.Options.Abstractions;
+using CS.Application.Persistence.Abstractions;
 using CS.Application.Services.Abstractions;
+using CS.Application.Services.Implementations;
 using CS.Application.Support.Utils;
 using CS.Core.Support;
 using CS.Core.ValueObjects;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 
-namespace CS.Api.Controllers.Administration;
+namespace CS.Api.Controllers;
 [ApiController]
 [Route("[controller]")]
 public class CharacterController : ControllerBase {
@@ -20,15 +21,19 @@ public class CharacterController : ControllerBase {
   private readonly IPlayerService _playerService;
   private readonly ICharacterService _characterService;
   private readonly IHubContext<MainHub, ITypedHubClient> _mainHubContext;
+  private readonly IServiceProvider _serviceProvider;
+
   public CharacterController(
     IOptions<ApiBehaviorOptions> apiBehaviorOptions,
     IPlayerService playerService,
     ICharacterService characterService,
-    IHubContext<MainHub, ITypedHubClient> mainHubContext) {
+    IHubContext<MainHub, ITypedHubClient> mainHubContext,
+    IServiceProvider serviceProvider) {
     _apiBehaviorOptions = Check.NotNull(apiBehaviorOptions, nameof(apiBehaviorOptions));
     _playerService = Check.NotNull(playerService, nameof(playerService));
     _characterService = Check.NotNull(characterService, nameof(characterService));
     _mainHubContext = Check.NotNull(mainHubContext, nameof(mainHubContext));
+    _serviceProvider = Check.NotNull(serviceProvider, nameof(serviceProvider));
   }
 
   [HttpPost("create")]
@@ -39,22 +44,28 @@ public class CharacterController : ControllerBase {
   public async Task<IActionResult> Create(CharacterCreationDto characterCreationDto, CancellationToken cancellationToken) {
 
     var nickname = new Nickname((User.Identity as ClaimsIdentity)!.FindFirst("nickname")!.Value);
-    var character = await _characterService
-      .Create(
-        nickname,
-        new Nickname(characterCreationDto.Nickname),
-        characterCreationDto.CharacterRace,
-        characterCreationDto.CharacterClass,
-        (byte)characterCreationDto.Gender,
-        cancellationToken);
+    var characterNickname = new Nickname(characterCreationDto.Nickname);
+    var player = await _playerService.GetOrCreatePlayerAsync(nickname, cancellationToken);
 
-    if (character is null) {
+    using var scope = _serviceProvider.CreateScope();
+    var _context = scope.ServiceProvider.GetRequiredService<IContext>();
+    if (_context.Characters.Any(c => c.Nickname.ValueLowerCase == characterNickname.ValueLowerCase)) {
       ModelState.AddModelError("Nickname", "Nickname already taken.");
       return _apiBehaviorOptions.Value.InvalidModelStateResponseFactory(ControllerContext);
     }
 
-    var currentPlayer = await _playerService.GetPlayerAsync(nickname);
-    await _mainHubContext.Clients.User(nickname.Value).SetCurrentPlayer(PlayerDto.FromPlayer(currentPlayer!));
+    if (player.Characters.Count() >= CharacterService.MaxNumberOfCharacters) {
+      ModelState.AddModelError("Creation", "Reached limit of characters.");
+      return _apiBehaviorOptions.Value.InvalidModelStateResponseFactory(ControllerContext);
+    }
+
+    await _characterService
+      .Create(
+        player,
+        characterNickname,
+        characterCreationDto.CharacterClass,
+        (byte)characterCreationDto.Gender,
+        cancellationToken);
 
     await _mainHubContext.Clients.User(nickname.Value).Reconnect();
 

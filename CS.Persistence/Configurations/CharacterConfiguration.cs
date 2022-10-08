@@ -28,14 +28,6 @@ public class CharacterConfiguration : EntityConfiguration<Character> {
     .Navigation(c => c.Nickname)
     .IsRequired();
 
-    builder
-      .HasOne(p => p.Quadrant)
-      .WithMany()
-      .HasForeignKey("quadrantId")
-      .OnDelete(DeleteBehavior.NoAction)
-      .IsRequired();
-
-
     builder.Ignore(c => c.CharacterStatus);
 
     builder.Property(p => p.HP).HasField("_hp");

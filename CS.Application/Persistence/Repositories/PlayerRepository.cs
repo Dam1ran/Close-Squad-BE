@@ -9,10 +9,13 @@ public class PlayerRepository : Repository, IPlayerRepository {
 
   public PlayerRepository(IContext context) : base(context) {}
 
+  public async Task AddAsync(Player player, CancellationToken cancellationToken) =>
+    await _context.Players.AddAsync(player, cancellationToken);
+
   private IQueryable<Player> ByNickname(Nickname nickname) =>
     _context.Players.Where(p => p.Nickname.ValueLowerCase == nickname.ValueLowerCase);
 
-  public async Task<Player?> FindByNicknameAsNoTrackingAsync(Nickname nickname, CancellationToken cancellationToken) =>
+  public async Task<Player?> FindByNicknameAsNoTrackingAsync(Nickname nickname, CancellationToken cancellationToken = default) =>
     await ByNickname(nickname).AsNoTracking().SingleOrDefaultAsync(cancellationToken);
 
   public async Task<Player?> FindByNicknameWithCharactersAsync(Nickname nickname, CancellationToken cancellationToken) =>
@@ -20,10 +23,9 @@ public class PlayerRepository : Repository, IPlayerRepository {
       .Include(p => p.Characters)
       .SingleOrDefaultAsync(cancellationToken);
 
-  public Task<List<Character>> GetPlayerCharactersWithQuadrantAsync(Player player, CancellationToken cancellationToken) =>
+  public Task<List<Character>> GetPlayerCharactersAsync(long playerId, CancellationToken cancellationToken) =>
     _context.Characters
-      .Where(c => c.Player.Nickname.ValueLowerCase == player.Nickname.ValueLowerCase)
-      .Include(c => c.Quadrant)
+      .Where(c => c.PlayerId == playerId)
       .OrderByDescending(c => c.Level)
         .ThenByDescending(c => c.XP)
       .ToListAsync(cancellationToken);

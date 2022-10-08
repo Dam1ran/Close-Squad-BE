@@ -41,12 +41,14 @@ public class PlayerConfiguration : EntityConfiguration<Player> {
       .HasDefaultValue("")
       .IsRequired();
 
-    builder.Ignore(c => c.Quadrant);
+    builder.Ignore(c => c.QuadrantIndex);
+    builder.Ignore(c => c.LogoutAt);
+    builder.Ignore(c => c.QuadrantsUrl);
 
     builder
       .HasMany(p => p.Characters)
       .WithOne(c => c.Player)
-      .HasForeignKey("playerId")
+      .HasForeignKey(c => c.PlayerId)
       .OnDelete(DeleteBehavior.NoAction)
       .IsRequired();
 

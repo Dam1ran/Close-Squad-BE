@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations.Schema;
 using CS.Core.Entities.Abstractions;
 using CS.Core.ValueObjects;
 
@@ -6,16 +7,24 @@ public class Player: Entity {
   #nullable disable
   protected Player() { }
   #nullable restore
-  public Player(Nickname nickname, Quadrant quadrant) {
+  public Player(Nickname nickname) {
     Nickname = nickname;
-    Quadrant = quadrant;
     Characters = new List<Character>();
   }
   public string ClanName { get; set; } = "";
   public string ClanIcon { get; set; } = "";
   public Nickname Nickname { get; private set; }
 
-  public Quadrant? Quadrant { get; set; }
+
+  [NotMapped]
+  public uint? QuadrantIndex { get; set; }
+
+  [NotMapped]
+  public DateTimeOffset? LogoutAt { get; set; }
+
+  [NotMapped]
+  public List<string> QuadrantsUrl { get; set; } = new();
+
   public IList<Character> Characters { get; set; }
 
 }

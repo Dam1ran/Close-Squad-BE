@@ -1,0 +1,14 @@
+{
+  "NrOfCols": 10,
+  "NrOfRows": 10,
+  "DefaultQuadrantIndex": 5,
+  "AssassinStartingIndex": 5,
+  "BerserkStartingIndex": 5,
+  "CupidStartingIndex": 5,
+  "DoctorStartingIndex": 5,
+  "HandymanStartingIndex": 5,
+  "MediumStartingIndex": 5,
+  "OccultistStartingIndex": 5,
+  "SeerStartingIndex": 5,
+  "TemplarStartingIndex": 5
+}

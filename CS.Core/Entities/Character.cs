@@ -9,27 +9,33 @@ public class Character : EntityStats {
   protected Character() { }
   #nullable restore
   public Character(
-    Quadrant quadrant,
     Nickname nickname,
-    CharacterRace characterRace,
     CharacterClass characterClass,
+    uint startingQuadrantIndex,
     byte gender)
   {
-    Quadrant = quadrant;
     Nickname = nickname;
-    CharacterRace = characterRace;
     CharacterClass = characterClass;
+    QuadrantIndex = startingQuadrantIndex;
     Gender = gender;
   }
 
   public Nickname Nickname { get; private set; }
-  public CharacterRace CharacterRace { get; set; }
   public CharacterClass CharacterClass { get; set; }
 
   [NotMapped]
   public CharacterStatus CharacterStatus { get; set; }
 
-  public Quadrant Quadrant { get; set; }
+  public uint QuadrantIndex { get; set; }
+  public long PlayerId { get; private set; }
   public Player Player { get; set; } = null!;
+
+  public bool CanTravel() =>
+    CharacterStatus == CharacterStatus.Awake &&
+    HP > 0;
+
+  public bool CanArrive() =>
+    CharacterStatus == CharacterStatus.Traveling &&
+    HP > 0;
 
 }

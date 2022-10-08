@@ -1,12 +1,28 @@
-clear mechanism for logout
+clear characters
 
-/// push XII
+/// push XV
+
+character race => character class
+tool for creation mock quadrants
+settings controller
+character creation refactor
+character toggle moved to call
+launch service
+character engine
+delayed task mechanism
+loading services
+world map rework and infra
+quadrant rework and make configurable
+improve character service
+clear mechanism for player logout
+
+/// push XIV
 
 character status
 character movement
 character toggle rework
 
-/// push XII
+/// push XIII
 
 started stats work
 cleanups

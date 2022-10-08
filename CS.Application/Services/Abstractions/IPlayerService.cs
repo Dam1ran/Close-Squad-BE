@@ -4,10 +4,12 @@ using CS.Core.ValueObjects;
 namespace CS.Application.Services.Abstractions;
 public interface IPlayerService {
 
-  Task<Player?> GetPlayerAsync(Nickname nickname, bool store = true, CancellationToken cancellationToken = default);
-  Task<IReadOnlyList<string>> GetPlayerNicknamesInBigQuadrantOf(Player player, CancellationToken cancellationToken = default);
-  List<Player> GetPlayersInQuadrant(Quadrant quadrant);
-  public void ClearPlayer(Nickname nickname);
-  Task<Player?> UpdatePlayerQuadrant(Nickname nickname, Quadrant? quadrant, CancellationToken cancellationToken = default);
+  Task<Player> GetOrCreatePlayerAsync(Nickname playerNickname, CancellationToken cancellationToken = default);
+  Task<Player?> GetPlayerAsync(Nickname nickname, bool store = true);
+  IReadOnlyList<string> GetPlayerNicknamesInBigQuadrantOf(Player player);
+  List<Player> GetPlayersInQuadrant(uint quadrantIndex);
+  Player UpdatePlayerQuadrant(Player player, uint? quadrantIndex);
+  Player ClearLogoutTime(Player player);
+  void SetLogoutTime(Player player);
 
 }

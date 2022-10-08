@@ -4,4 +4,7 @@ public interface ITickService {
   public event EventHandler? on_200ms_tick;
   public event EventHandler? on_500ms_tick;
   public event EventHandler? on_1000ms_tick;
+  public event EventHandler? on_60s_tick;
+  public event EventHandler? on_300s_tick;
+
 }

@@ -29,10 +29,6 @@ public static class OptionsServiceCollectionExtensions {
       .AddOptions<RefreshTokenOptions>()
       .BindConfiguration(RefreshTokenOptions.RefreshToken)
       .ValidateDataAnnotations()
-      .Services
-      .AddOptions<WorldMapOptions>()
-      .BindConfiguration(WorldMapOptions.WorldMap)
-      .ValidateDataAnnotations()
       .Services.AddSingleton(typeof(IOptions<>), typeof(OptionsAdapter<>));
 
 }

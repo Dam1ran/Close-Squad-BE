@@ -1,6 +1,7 @@
 using System.Text.RegularExpressions;
-using CS.Api.Communications.Models;
-using CS.Api.Communications.Models.Enums;
+using CS.Application.Enums;
+using CS.Application.Models;
+using CS.Application.Services.Abstractions;
 using CS.Core.Entities;
 using CS.Core.ValueObjects;
 using Microsoft.AspNetCore.SignalR;
@@ -24,8 +25,8 @@ public partial class MainHub : Hub<ITypedHubClient> {
   }
 
   private async Task ProcessNearbyMessage(Player player, ChatMessage chatMessage) {
-    var players = await _playerService.GetPlayerNicknamesInBigQuadrantOf(player);
 
+    var players = _playerService.GetPlayerNicknamesInBigQuadrantOf(player);
     await Clients.Users(players).ReceiveChatMessage(new ChatMessage {
       Type = ChatMessageType.Nearby,
       Text = chatMessage.Text,
@@ -82,22 +83,6 @@ public partial class MainHub : Hub<ITypedHubClient> {
       Text = chatMessage.Text,
       ChatPlayerDto = ChatPlayerDto.FromPlayer(player)
     });
-  }
-
-  private async Task SendOthersLeavingQuadrant(Player player) {
-    var playersExceptCaller = _playerService.GetPlayersInQuadrant(player.Quadrant!).Where(p => p.Id != player.Id);
-    foreach (var _player in playersExceptCaller) {
-      await Clients.User(_player.Nickname.Value)
-        .SetNearbyGroup(playersExceptCaller.Where(p => p.Id != _player.Id).Select(p => ChatPlayerDto.FromPlayer(p)));
-    }
-  }
-
-  private async Task SendEnteringQuadrant(Player player) {
-    var players = _playerService.GetPlayersInQuadrant(player.Quadrant!);
-    foreach (var _player in players) {
-      await Clients.User(_player.Nickname.Value)
-        .SetNearbyGroup(players.Where(p => p.Id != _player.Id).Select(p => ChatPlayerDto.FromPlayer(p)));
-    }
   }
 
   private async Task<Player?> GetCurrentPlayer() => await _playerService.GetPlayerAsync(new Nickname(Context.UserIdentifier!));
