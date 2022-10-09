@@ -10,5 +10,6 @@ public interface IWorldMapService {
   uint GetStartingQuadrantIndex(CharacterClass characterClass);
   uint GetArrivingQuadrantIndex(uint quadrantIndex, TravelDirection travelDirection);
   Quadrant GetQuadrantByIndex(uint quadrantIndex);
+  Quadrant? GetQuadrantByIndexIfExists(uint quadrantIndex);
 
 }

@@ -240,7 +240,7 @@ public partial class MainHub : Hub<ITypedHubClient> {
     }
     var characterStatus = character.CharacterStatus;
 
-    var travelingCharacter = _characterService.Update(currentPlayer, character, (key, existing) =>
+    var travelingCharacter = await _characterService.Update(currentPlayer, character, (key, existing) =>
     {
       existing.CharacterStatus = CharacterStatus.Traveling;
       return existing;
@@ -254,6 +254,44 @@ public partial class MainHub : Hub<ITypedHubClient> {
     if (characterStatus != travelingCharacter.CharacterStatus && travelingCharacter.CharacterStatus == CharacterStatus.Traveling) {
       var secondsToTravel = _characterEngine.TravelTo(characterTravelCall.TravelDirection, travelingCharacter, currentPlayer);
     }
+
+  }
+
+  public async Task ScoutQuadrant(CharacterScoutCall characterScoutCall) {
+    var currentPlayer = await GetCurrentPlayer();
+    if (currentPlayer is null) {
+      return;
+    }
+
+    var character = _characterService.GetCharacterOf(currentPlayer, characterScoutCall.CharacterId);
+    if (character is null /* || no consumable */) {
+      return;
+    }
+
+    await _characterService.Update(currentPlayer, character, (key, existing) => {
+      // existing.Inventory.Decrement(consumable)
+      return existing;
+    });
+
+    // await Clients.Caller.UpdateCharacterInventory(new { Id = character.Id, ...items });
+
+    var quadrant = _worldMapService.GetQuadrantByIndexIfExists(characterScoutCall.QuadrantIndex);
+    if (quadrant is null) {
+      return;
+    }
+
+    var report = new ScoutQuadrantReport() {
+      QuadrantIndex = quadrant.Index,
+      Area = quadrant.Area,
+      Name = quadrant.Name,
+      Characters = _characterService
+        .GetCharactersInQuadrant(quadrant.Index)
+        .Where(c => c.CharacterClass != CharacterClass.Assassin)
+        .Select(c => CharacterSimpleDto.FromCharacter(c))
+      // others
+    };
+
+    await Clients.Caller.SendScoutQuadrantReport(report);
 
   }
 

@@ -17,6 +17,7 @@ MediatR
 SendGrid
 SignalR
 SQL
+ImageSharp
 Git :D
 and others...
 ```

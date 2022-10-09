@@ -8,6 +8,7 @@ public interface ITypedHubClient {
   Task ReceiveChatMessage(ChatMessage chatMessage);
   Task SetNearbyGroup(IEnumerable<ChatPlayerDto> chatPlayerDtos);
   Task UpdateCharacter(object characterDto);
+  Task SendScoutQuadrantReport(ScoutQuadrantReport scoutQuadrantReport);
   Task Reconnect();
 
 }

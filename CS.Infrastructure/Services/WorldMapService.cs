@@ -156,6 +156,8 @@ public class WorldMapService : IWorldMapService {
 
   public Quadrant GetQuadrantByIndex(uint quadrantIndex) =>
     Quadrants.Single(q => q.Index == quadrantIndex);
+  public Quadrant? GetQuadrantByIndexIfExists(uint quadrantIndex) =>
+    Quadrants.SingleOrDefault(q => q.Index == quadrantIndex);
 
   public Tuple<ushort, ushort> GetNrOfColsAndRows() {
     if (_worldMapSettings is null) {

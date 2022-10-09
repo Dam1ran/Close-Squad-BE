@@ -1,9 +1,15 @@
 clear characters
 
+/// push XVI
+
+some reorganization of character calls classes
+persist flag for update character
+quadrant scout report feature part 1 of 2?
+
 /// push XV
 
 character race => character class
-tool for creation mock quadrants
+tool for creation mock quadrants(another project)
 settings controller
 character creation refactor
 character toggle moved to call

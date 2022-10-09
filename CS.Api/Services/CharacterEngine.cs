@@ -66,12 +66,12 @@ public class CharacterEngine : ICharacterEngine {
       if (character is not null && character.CanArrive())
       {
 
-        var updatedCharacter = _characterService.Update(player, character, (key, existing) =>
+        var updatedCharacter = await _characterService.Update(player, character, (key, existing) =>
         {
           existing.QuadrantIndex = arrivingQuadrantIndex;
           existing.CharacterStatus = CharacterStatus.Awake;
           return existing;
-        });
+        }, true);
 
         if (updatedCharacter is null)
         {
@@ -91,7 +91,7 @@ public class CharacterEngine : ICharacterEngine {
 
     });
 
-    Tasks.TryAdd(taskGuid, new DelayedTask(task, DateTimeOffset.UtcNow.AddSeconds(0))); // use secondsToTravel when done
+    Tasks.TryAdd(taskGuid, new DelayedTask(task, DateTimeOffset.UtcNow.AddSeconds(2))); // use secondsToTravel when done
     return secondsToTravel;
 
   }

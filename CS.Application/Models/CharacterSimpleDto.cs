@@ -2,7 +2,7 @@ using CS.Core.Entities;
 using CS.Core.Enums;
 
 namespace CS.Application.Models;
-public class CharacterDto {
+public class CharacterSimpleDto {
   public long Id { get; set; }
   public uint QuadrantIndex { get; set; }
   public string Nickname { get; set; } = "";
@@ -11,15 +11,10 @@ public class CharacterDto {
   public CharacterClass CharacterClass { get; set; }
   public CharacterStatus CharacterStatus { get; set; }
 
-  public uint MaxHP { get; set; }
-  public uint HP { get; set; }
-  public uint MaxMP { get; set; }
-  public uint MP { get; set; }
-
-  public float XP_Percent { get; set; }
+  // equipment
 
 
-  public static CharacterDto FromCharacter(Character character) =>
+  public static CharacterSimpleDto FromCharacter(Character character) =>
     new() {
       Id = character.Id,
       QuadrantIndex = character.QuadrantIndex,
@@ -27,11 +22,6 @@ public class CharacterDto {
       Level = character.Level,
       CharacterClass = character.CharacterClass,
       CharacterStatus = character.CharacterStatus,
-      MaxHP = character.MaxHP,
-      HP = character.HP,
-      MaxMP = character.MaxMP,
-      MP = character.MP,
-      XP_Percent = character.XP_Percent
     };
 
 }

@@ -59,25 +59,28 @@ public class CharacterService : ICharacterService {
       return characters.Values;
     }
 
-    using (var scope = _serviceProvider.CreateScope()) {
-      var _playerRepo = scope.ServiceProvider.GetRequiredService<IPlayerRepository>();
-      var repoCharacters = await _playerRepo.GetPlayerCharactersAsync(player.Id, cancellationToken);
-      if (repoCharacters.Count() == 0) {
-        return Enumerable.Empty<Character>();
-      }
+    using var scope = _serviceProvider.CreateScope();
+    var _playerRepo = scope.ServiceProvider.GetRequiredService<IPlayerRepository>();
 
-      var dict = new ConcurrentDictionary<long, Character>();
-      foreach (var character in repoCharacters) {
-        dict.TryAdd(character.Id, character);
-      }
-
-      Characters.TryAdd(player.Id, dict);
-
-      return dict.Values;
-
+    var repoCharacters = await _playerRepo.GetPlayerCharactersAsync(player.Id, cancellationToken);
+    if (repoCharacters.Count() == 0) {
+      return Enumerable.Empty<Character>();
     }
 
+    var dict = new ConcurrentDictionary<long, Character>();
+    foreach (var character in repoCharacters) {
+      dict.TryAdd(character.Id, character);
+    }
+
+    Characters.TryAdd(player.Id, dict);
+
+    return dict.Values;
+
   }
+
+  public IEnumerable<Character> GetCharactersInQuadrant(uint quadrantIndex) =>
+    Characters.Values.SelectMany(c => c.Values);
+      // .Where(c => c.QuadrantIndex == quadrantIndex); add when done
 
   public Character? GetCharacterOf(Player player, long id) {
     if (Characters.TryGetValue(player.Id, out var _characters) &&
@@ -116,11 +119,26 @@ public class CharacterService : ICharacterService {
 
   }
 
-  public Character? Update(Player player, Character character, Func<long, Character, Character> updateValueFactory) {
+  public async Task<Character?> Update(Player player, Character character, Func<long, Character, Character> updateValueFactory, bool persist = false) {
     if (!Characters.TryGetValue(player.Id, out var characters)) {
       return null;
     }
 
-    return characters.AddOrUpdate(character.Id, character, updateValueFactory);
+    var characterResult = characters.AddOrUpdate(character.Id, character, updateValueFactory);
+
+    if (characterResult is not null && persist) {
+      await Persist(characterResult);
+    }
+
+    return characterResult;
   }
+
+  private async Task Persist(Character character) {
+    using var scope = _serviceProvider.CreateScope();
+    var _context = scope.ServiceProvider.GetRequiredService<IContext>();
+
+    _context.Characters.Update(character);
+    await _context.SaveChangesAsync();
+  }
+
 }
