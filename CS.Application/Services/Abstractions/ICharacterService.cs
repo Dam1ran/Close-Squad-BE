@@ -11,5 +11,7 @@ public interface ICharacterService {
   IEnumerable<Character> GetCharactersInQuadrant(uint quadrantIndex);
   Character? Toggle(Player player, Character character);
   Task<Character?> Update(Player player, Character character, Func<long, Character, Character> updateValueFactory, bool persist = false);
+  Task PersistAndClearPlayerCharacters(Player player);
+  Task PersistPlayerCharacters(Player player);
 
 }

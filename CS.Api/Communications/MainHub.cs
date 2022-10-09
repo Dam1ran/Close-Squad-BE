@@ -4,6 +4,7 @@ using CS.Api.Communications.Models;
 using CS.Api.Support;
 using CS.Application.Enums;
 using CS.Application.Models;
+using CS.Application.Models.Dialog;
 using CS.Application.Services.Abstractions;
 using CS.Application.Support.Constants;
 using CS.Application.Support.Utils;
@@ -139,8 +140,12 @@ public partial class MainHub : Hub<ITypedHubClient> {
 
     var currentPlayer = await GetCurrentPlayer();
     if (currentPlayer is null) {
-      // do a dialog on FE
-      await SendSystemChatMessage("Create a character to use chat.");
+      await Clients.Caller.SendServerDialog(new() {
+        Message = "Create a character to use chat.",
+        CanBeClosed = true,
+        DialogType = DialogType.Warning,
+        Title = "No character..."
+      });
     } else {
       currentPlayer = _playerService.ClearLogoutTime(currentPlayer);
       await _hubService.SetCurrentPlayer(currentPlayer);
@@ -238,6 +243,11 @@ public partial class MainHub : Hub<ITypedHubClient> {
     if (character is null || !character.CanTravel()) {
       return;
     }
+
+
+    // TODO: check for quadrant requirements...
+
+
     var characterStatus = character.CharacterStatus;
 
     var travelingCharacter = await _characterService.Update(currentPlayer, character, (key, existing) =>

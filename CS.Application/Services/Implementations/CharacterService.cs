@@ -15,15 +15,24 @@ public class CharacterService : ICharacterService {
   private readonly IServiceProvider _serviceProvider;
   private readonly IWorldMapService _worldMapService;
   private readonly IPlayerService _playerService;
+  private readonly ITickService _tickService;
   private readonly ConcurrentDictionary<long, ConcurrentDictionary<long, Character>> Characters = new();
 
   public static readonly int MaxNumberOfCharacters = Enum.GetNames(typeof(CharacterClass)).Length;
 
+  private const int CharacterBufferClearIntervalSeconds = 60;
 
-  public CharacterService(IServiceProvider serviceProvider, IWorldMapService worldMapService, IPlayerService playerService) {
+  public CharacterService(
+    IServiceProvider serviceProvider,
+    IWorldMapService worldMapService,
+    IPlayerService playerService,
+    ITickService tickService) {
     _serviceProvider = Check.NotNull(serviceProvider, nameof(serviceProvider));
     _worldMapService = Check.NotNull(worldMapService, nameof(worldMapService));
     _playerService = Check.NotNull(playerService, nameof(playerService));
+    _tickService = Check.NotNull(tickService, nameof(tickService));
+
+    _tickService.on_60s_tick += ClearLoggedOutPlayersAndCharacters;
   }
 
     public async Task Create(Player player, Nickname characterNickname, CharacterClass characterClass, byte gender, CancellationToken cancellationToken = default) {
@@ -62,7 +71,7 @@ public class CharacterService : ICharacterService {
     using var scope = _serviceProvider.CreateScope();
     var _playerRepo = scope.ServiceProvider.GetRequiredService<IPlayerRepository>();
 
-    var repoCharacters = await _playerRepo.GetPlayerCharactersAsync(player.Id, cancellationToken);
+    var repoCharacters = await _playerRepo.GetPlayerCharactersAsNoTrackingAsync(player.Id, cancellationToken);
     if (repoCharacters.Count() == 0) {
       return Enumerable.Empty<Character>();
     }
@@ -138,6 +147,40 @@ public class CharacterService : ICharacterService {
     var _context = scope.ServiceProvider.GetRequiredService<IContext>();
 
     _context.Characters.Update(character);
+    await _context.SaveChangesAsync();
+  }
+
+  private void ClearLoggedOutPlayersAndCharacters(object? sender, EventArgs e) {
+    var players = _playerService.GetPlayers();
+    foreach (var player in players) {
+      if (player.LogoutAt.HasValue && player.LogoutAt.Value.AddSeconds(CharacterBufferClearIntervalSeconds) < DateTimeOffset.UtcNow) {
+        // if this will be called quicker than the time it takes to do the actual update
+        // then consider a checking mechanism for tasks already running
+        // for now it runs only by one thread each minute
+        _ = PersistAndClearPlayerCharacters(player);
+      }
+    }
+  }
+
+  public async Task PersistAndClearPlayerCharacters(Player player) {
+
+    await PersistPlayerCharacters(player);
+
+    if (Characters.TryRemove(player.Id, out _)) {
+      _playerService.ClearPlayer(player);
+    }
+
+  }
+
+  public async Task PersistPlayerCharacters(Player player) {
+    if (!Characters.TryGetValue(player.Id, out var characters) || !characters.Any()) {
+      return;
+    }
+
+    using var scope = _serviceProvider.CreateScope();
+    var _context = scope.ServiceProvider.GetRequiredService<IContext>();
+
+    _context.Characters.UpdateRange(characters.Values);
     await _context.SaveChangesAsync();
   }
 

@@ -81,7 +81,12 @@ public class CharacterEngine : ICharacterEngine {
 
         await _mainHubContext.Clients
           .User(player.Nickname)
-          .UpdateCharacter(new { Id = updatedCharacter.Id, CharacterStatus = updatedCharacter.CharacterStatus, QuadrantIndex = updatedCharacter.QuadrantIndex });
+          .UpdateCharacter(new
+          {
+            Id = updatedCharacter.Id,
+            CharacterStatus = updatedCharacter.CharacterStatus,
+            QuadrantIndex = updatedCharacter.QuadrantIndex
+          });
 
         await UpdatePlayerQuadrant(player, previousQuadrantIndex, updatedCharacter);
 

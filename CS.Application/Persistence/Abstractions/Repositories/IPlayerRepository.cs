@@ -6,7 +6,7 @@ public interface IPlayerRepository: IRepository {
 
   public Task AddAsync(Player player, CancellationToken cancellationToken);
   public Task<Player?> FindByNicknameAsNoTrackingAsync(Nickname playerNickname, CancellationToken cancellationToken = default);
-  public Task<Player?> FindByNicknameWithCharactersAsync(Nickname playerNickname, CancellationToken cancellationToken);
-  public Task<List<Character>> GetPlayerCharactersAsync(long playerId, CancellationToken cancellationToken);
+  public Task<Player?> FindByNicknameWithCharactersAsNoTrackingAsync(Nickname playerNickname, CancellationToken cancellationToken);
+  public Task<List<Character>> GetPlayerCharactersAsNoTrackingAsync(long playerId, CancellationToken cancellationToken);
 
 }

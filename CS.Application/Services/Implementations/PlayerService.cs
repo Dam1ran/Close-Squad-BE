@@ -17,7 +17,6 @@ public class PlayerService : IPlayerService {
   private readonly ITickService _tickService;
 
   private readonly ConcurrentDictionary<string, Player> Players = new();
-  private const int PlayerBufferClearIntervalSeconds = 60;
 
   public PlayerService(
     ICacheService cacheService,
@@ -28,13 +27,12 @@ public class PlayerService : IPlayerService {
     _serviceProvider = Check.NotNull(serviceProvider, nameof(serviceProvider));
     _worldMapService = Check.NotNull(worldMapService, nameof(worldMapService));
     _tickService = Check.NotNull(tickService, nameof(tickService));
-    _tickService.on_60s_tick += ClearLoggedOutPlayers;
   }
 
   public async Task<Player> GetOrCreatePlayerAsync(Nickname playerNickname, CancellationToken cancellationToken = default) {
     using var scope = _serviceProvider.CreateScope();
     var _playerRepo = scope.ServiceProvider.GetRequiredService<IPlayerRepository>();
-    var player = await _playerRepo.FindByNicknameWithCharactersAsync(playerNickname, cancellationToken);
+    var player = await _playerRepo.FindByNicknameWithCharactersAsNoTrackingAsync(playerNickname, cancellationToken);
     if (player is not null) {
       return player;
     }
@@ -133,15 +131,14 @@ public class PlayerService : IPlayerService {
         });
   }
 
-  private void ClearLoggedOutPlayers(object? sender, EventArgs e) {
-    foreach (var player in Players) {
-      if (player.Value.LogoutAt.HasValue && player.Value.LogoutAt.Value.AddSeconds(PlayerBufferClearIntervalSeconds) < DateTimeOffset.UtcNow) {
-        Players.TryRemove(player.Key, out Player? outPlayer);
-        Debug.WriteLine($"Cleared key: \"{player.Key}\" from Players cache.");
-      }
-
+  public void ClearPlayer(Player player) {
+    if (Players.TryRemove(player.Nickname.ValueLowerCase, out _)) {
+      Debug.WriteLine($"Cleared key: \"{player.Nickname.ValueLowerCase}\" from Players cache.");
+    } else {
+      Debug.WriteLine($"Failed to clear key: \"{player.Nickname.ValueLowerCase}\" from Players cache.");
     }
   }
 
+  public ICollection<Player> GetPlayers() => Players.Values;
 
 }

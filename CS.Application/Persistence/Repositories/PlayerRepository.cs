@@ -18,16 +18,18 @@ public class PlayerRepository : Repository, IPlayerRepository {
   public async Task<Player?> FindByNicknameAsNoTrackingAsync(Nickname nickname, CancellationToken cancellationToken = default) =>
     await ByNickname(nickname).AsNoTracking().SingleOrDefaultAsync(cancellationToken);
 
-  public async Task<Player?> FindByNicknameWithCharactersAsync(Nickname nickname, CancellationToken cancellationToken) =>
+  public async Task<Player?> FindByNicknameWithCharactersAsNoTrackingAsync(Nickname nickname, CancellationToken cancellationToken) =>
     await ByNickname(nickname)
       .Include(p => p.Characters)
+      .AsNoTracking()
       .SingleOrDefaultAsync(cancellationToken);
 
-  public Task<List<Character>> GetPlayerCharactersAsync(long playerId, CancellationToken cancellationToken) =>
+  public Task<List<Character>> GetPlayerCharactersAsNoTrackingAsync(long playerId, CancellationToken cancellationToken) =>
     _context.Characters
       .Where(c => c.PlayerId == playerId)
       .OrderByDescending(c => c.Level)
         .ThenByDescending(c => c.XP)
+      .AsNoTracking()
       .ToListAsync(cancellationToken);
 
 }

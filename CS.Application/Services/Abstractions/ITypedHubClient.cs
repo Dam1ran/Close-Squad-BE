@@ -9,6 +9,7 @@ public interface ITypedHubClient {
   Task SetNearbyGroup(IEnumerable<ChatPlayerDto> chatPlayerDtos);
   Task UpdateCharacter(object characterDto);
   Task SendScoutQuadrantReport(ScoutQuadrantReport scoutQuadrantReport);
+  Task SendServerDialog(ServerDialog dialog);
   Task Reconnect();
 
 }

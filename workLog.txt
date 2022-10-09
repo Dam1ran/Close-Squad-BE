@@ -1,4 +1,8 @@
-clear characters
+/// push XVII
+
+server dialog
+some repo improvements
+clear characters at exit
 
 /// push XVI
 
