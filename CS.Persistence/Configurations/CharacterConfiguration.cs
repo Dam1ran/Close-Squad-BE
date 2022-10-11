@@ -29,6 +29,7 @@ public class CharacterConfiguration : EntityConfiguration<Character> {
     .IsRequired();
 
     builder.Ignore(c => c.CharacterStatus);
+    builder.Ignore(c => c.Position);
 
     builder.Property(p => p.HP).HasField("_hp");
     builder.Property(p => p.MP).HasField("_mp");

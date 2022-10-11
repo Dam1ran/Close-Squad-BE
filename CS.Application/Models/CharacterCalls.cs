@@ -12,3 +12,10 @@ public class CharacterTravelCall: CharacterCall {
 public class CharacterScoutCall: CharacterCall {
   public uint QuadrantIndex { get; set; }
 }
+
+public class CharacterMoveCall: CharacterCall {
+  public float X { get; set; }
+  public float Y { get; set; }
+
+  public bool IsPercent() => X >= 0 && X <= 100 && Y >= 0 && Y <= 100;
+}

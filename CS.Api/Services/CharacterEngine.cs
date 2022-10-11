@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Numerics;
 using CS.Api.Communications;
 using CS.Application.Models;
 using CS.Application.Services.Abstractions;
@@ -37,6 +38,8 @@ public class CharacterEngine : ICharacterEngine {
     _hubService = Check.NotNull(hubService, nameof(hubService));
 
     _tickService.on_1000ms_tick += StartDelayedTasks;
+    _tickService.on_1000ms_tick += MoveCharacters;
+    _tickService.on_1000ms_tick += SendCharacters;
   }
 
   public int TravelTo(TravelDirection travelDirection, Character character, Player player) {
@@ -63,32 +66,28 @@ public class CharacterEngine : ICharacterEngine {
     var taskGuid = Guid.NewGuid().ToString();
     var task = new Task(async () =>
     {
-      if (character is not null && character.CanArrive())
-      {
+      if (character.CanArrive()) {
 
-        var updatedCharacter = await _characterService.Update(player, character, (key, existing) =>
-        {
-          existing.QuadrantIndex = arrivingQuadrantIndex;
-          existing.CharacterStatus = CharacterStatus.Awake;
-          return existing;
-        }, true);
+        character.QuadrantIndex = arrivingQuadrantIndex;
+        character.CharacterStatus = CharacterStatus.Awake;
+        character.Position.SetLocationAndDestination(travelDirection);
 
-        if (updatedCharacter is null)
-        {
-          Tasks.TryRemove(taskGuid, out _);
-          return;
-        }
+        await _characterService.Persist(character);
 
         await _mainHubContext.Clients
           .User(player.Nickname)
           .UpdateCharacter(new
           {
-            Id = updatedCharacter.Id,
-            CharacterStatus = updatedCharacter.CharacterStatus,
-            QuadrantIndex = updatedCharacter.QuadrantIndex
+            Id = character.Id,
+            CharacterStatus = character.CharacterStatus,
+            QuadrantIndex = character.QuadrantIndex,
+            X = character.Position.Location.X,
+            Y = character.Position.Location.Y,
+            xDestination = character.Position.Location.X,
+            yDestination = character.Position.Location.Y,
           });
 
-        await UpdatePlayerQuadrant(player, previousQuadrantIndex, updatedCharacter);
+        await UpdatePlayerQuadrant(player, previousQuadrantIndex, character);
 
         Tasks.TryRemove(taskGuid, out _);
 
@@ -127,6 +126,26 @@ public class CharacterEngine : ICharacterEngine {
         Task.Run(() => task.Value.Task.Start()).ConfigureAwait(false);
 
       }
+    }
+
+  }
+
+  private void MoveCharacters(object? sender, EventArgs e) {
+
+    // TODO: get speed
+    var speed = 2.0F; // M/S
+
+    foreach (var character in _characterService.GetAll().Where(c => !c.Position.IsAtDestination(speed))) {
+      character.Position.Move(speed);
+      _ = _mainHubContext.Clients.User("Mime").UpdateCharacter(new { Id = character.Id, X = character.Position.Location.X, Y = character.Position.Location.Y });
+    }
+
+  }
+
+  private void SendCharacters(object? sender, EventArgs e) {
+
+    foreach (var group in _characterService.GetAll().GroupBy(c => c.PlayerId)) {
+      _ = _hubService.SendUpdateCharacters(group.Key, group.Select(CharacterDto.FromCharacter));
     }
 
   }

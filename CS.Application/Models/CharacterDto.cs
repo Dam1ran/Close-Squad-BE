@@ -16,6 +16,9 @@ public class CharacterDto {
   public uint MaxMP { get; set; }
   public uint MP { get; set; }
 
+  public double X { get; set; }
+  public double Y { get; set; }
+
   public float XP_Percent { get; set; }
 
 
@@ -31,7 +34,9 @@ public class CharacterDto {
       HP = character.HP,
       MaxMP = character.MaxMP,
       MP = character.MP,
-      XP_Percent = character.XP_Percent
+      XP_Percent = character.XP_Percent,
+      X = character.Position.Location.X,
+      Y = character.Position.Location.Y
     };
 
 }

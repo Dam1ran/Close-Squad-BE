@@ -1,3 +1,9 @@
+/// push XVIII
+
+periodic character send
+movement part I
+threading rework
+
 /// push XVII
 
 server dialog

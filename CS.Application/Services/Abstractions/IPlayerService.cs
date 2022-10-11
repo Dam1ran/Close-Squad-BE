@@ -4,6 +4,7 @@ using CS.Core.ValueObjects;
 namespace CS.Application.Services.Abstractions;
 public interface IPlayerService {
 
+  Nickname GetPlayerNickname(long playerId);
   ICollection<Player> GetPlayers();
   Task<Player> GetOrCreatePlayerAsync(Nickname playerNickname, CancellationToken cancellationToken = default);
   Task<Player?> GetPlayerAsync(Nickname nickname, bool store = true);

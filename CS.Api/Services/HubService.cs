@@ -34,9 +34,15 @@ public class HubService : IHubService {
       var players = _playerService.GetPlayersInQuadrant(player.QuadrantIndex.Value).Where(p => p.Id != player.Id || toSelf);
       foreach (var _player in players) {
         await _mainHubContext.Clients.User(_player.Nickname)
-          .SetNearbyGroup(players.Where(p => p.Id != _player.Id).Select(p => ChatPlayerDto.FromPlayer(p)));
+          .SetNearbyGroup(players.Where(p => p.Id != _player.Id).Select(ChatPlayerDto.FromPlayer));
       }
     }
+  }
+
+  public async Task SendUpdateCharacters(long playerId, IEnumerable<CharacterDto> characters) {
+    var playerNickname = _playerService.GetPlayerNickname(playerId);
+    await _mainHubContext.Clients.User(playerNickname)
+      .UpdateCharacters(characters);
   }
 
   public async Task SetCurrentPlayer(Player player) {

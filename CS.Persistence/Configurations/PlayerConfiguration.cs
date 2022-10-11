@@ -47,7 +47,7 @@ public class PlayerConfiguration : EntityConfiguration<Player> {
 
     builder
       .HasMany(p => p.Characters)
-      .WithOne(c => c.Player)
+      .WithOne()
       .HasForeignKey(c => c.PlayerId)
       .OnDelete(DeleteBehavior.NoAction)
       .IsRequired();

@@ -1,7 +1,8 @@
+using System.Drawing;
 using CS.Core.Support;
 
 namespace CS.Core.Entities.Abstractions;
-public abstract class EntityStats: Entity {
+public abstract class CharacterStats: Entity {
 
   //-----------------HP---------------------------------
   protected uint _hp;
@@ -65,6 +66,7 @@ public abstract class EntityStats: Entity {
     Interlocked.Exchange(ref _level, level);
 
     return _xp;
+
   }
 
   //-----------------Lvl--------------------------------
@@ -72,5 +74,7 @@ public abstract class EntityStats: Entity {
   public int Level { get => _level; protected set { _level = value; } }
 
   public float XP_Percent => Level_Constants.GetLevelAndPercent(_xp).Item2;
+
+
 
 }

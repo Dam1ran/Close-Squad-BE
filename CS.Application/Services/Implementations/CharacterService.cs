@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using CS.Application.Persistence.Abstractions;
 using CS.Application.Persistence.Abstractions.Repositories;
 using CS.Application.Services.Abstractions;
@@ -16,11 +15,12 @@ public class CharacterService : ICharacterService {
   private readonly IWorldMapService _worldMapService;
   private readonly IPlayerService _playerService;
   private readonly ITickService _tickService;
-  private readonly ConcurrentDictionary<long, ConcurrentDictionary<long, Character>> Characters = new();
+  private readonly List<Tuple<long, Character>> Characters = new();
 
   public static readonly int MaxNumberOfCharacters = Enum.GetNames(typeof(CharacterClass)).Length;
-
   private const int CharacterBufferClearIntervalSeconds = 60;
+
+  private readonly object listLock = new object();
 
   public CharacterService(
     IServiceProvider serviceProvider,
@@ -33,6 +33,7 @@ public class CharacterService : ICharacterService {
     _tickService = Check.NotNull(tickService, nameof(tickService));
 
     _tickService.on_60s_tick += ClearLoggedOutPlayersAndCharacters;
+
   }
 
     public async Task Create(Player player, Nickname characterNickname, CharacterClass characterClass, byte gender, CancellationToken cancellationToken = default) {
@@ -50,99 +51,60 @@ public class CharacterService : ICharacterService {
     _context.Players.Update(player);
     await _context.SaveChangesAsync(cancellationToken);
 
-    if (!Characters.TryGetValue(player.Id, out var characters)) {
-      characters = new ();
-    }
-
-    foreach (var character in player.Characters) {
-      characters.TryAdd(character.Id, character);
-    }
-
-    Characters.TryAdd(player.Id, characters);
-
   }
 
   public async Task<IEnumerable<Character>> GetCharactersOf(Player player, CancellationToken cancellationToken = default) {
 
-    if (Characters.TryGetValue(player.Id, out var characters)) {
-      return characters.Values;
+    var characters = Characters.Where(cl => cl.Item1 == player.Id);
+    if (characters.Any()) {
+      return characters.Select(cl => cl.Item2);
     }
 
     using var scope = _serviceProvider.CreateScope();
     var _playerRepo = scope.ServiceProvider.GetRequiredService<IPlayerRepository>();
 
     var repoCharacters = await _playerRepo.GetPlayerCharactersAsNoTrackingAsync(player.Id, cancellationToken);
-    if (repoCharacters.Count() == 0) {
-      return Enumerable.Empty<Character>();
+    if (repoCharacters.Any()) {
+      lock (listLock) {
+
+        foreach (var character in repoCharacters) {
+          if (Characters.SingleOrDefault(cl => cl.Item2.Id == character.Id) is null) {
+            Characters.Add(new (player.Id, character));
+          }
+        }
+
+      }
+
+      return repoCharacters;
+
     }
 
-    var dict = new ConcurrentDictionary<long, Character>();
-    foreach (var character in repoCharacters) {
-      dict.TryAdd(character.Id, character);
-    }
-
-    Characters.TryAdd(player.Id, dict);
-
-    return dict.Values;
+    return Enumerable.Empty<Character>();
 
   }
 
   public IEnumerable<Character> GetCharactersInQuadrant(uint quadrantIndex) =>
-    Characters.Values.SelectMany(c => c.Values);
-      // .Where(c => c.QuadrantIndex == quadrantIndex); add when done
+    Characters.Where(cl => cl.Item2.QuadrantIndex == quadrantIndex).Select(cl => cl.Item2);
 
-  public Character? GetCharacterOf(Player player, long id) {
-    if (Characters.TryGetValue(player.Id, out var _characters) &&
-        _characters.TryGetValue(id, out var _character))
-    {
-      return _character;
-    }
+  public Character? GetCharacterOf(Player player, long id) =>
+    Characters.SingleOrDefault(cl => cl.Item1 == player.Id && cl.Item2.Id == id)?.Item2;
 
-    return null;
-  }
-
-
-
-  public Character? Toggle(Player player, Character character) {
-    if (!Characters.TryGetValue(player.Id, out var characters)) {
-      return null;
-    }
+  public void Toggle(Player player, Character character) {
 
     if (character.CharacterStatus == CharacterStatus.Engaged) {
-      return character;
+      return;
     }
 
-    return characters.AddOrUpdate(
-      character.Id,
-      character,
-      (key, existing) => {
-        existing.CharacterStatus
-          = character.CharacterStatus != CharacterStatus.Astray
-          ? CharacterStatus.Astray
-          : character.HP > 0
-          ? CharacterStatus.Awake
-          : CharacterStatus.Dead;
-
-        return existing;
-      });
+    character.CharacterStatus
+      = character.CharacterStatus != CharacterStatus.Astray
+      ? CharacterStatus.Astray
+      : character.HP > 0
+      ? CharacterStatus.Awake
+      : CharacterStatus.Dead;
 
   }
 
-  public async Task<Character?> Update(Player player, Character character, Func<long, Character, Character> updateValueFactory, bool persist = false) {
-    if (!Characters.TryGetValue(player.Id, out var characters)) {
-      return null;
-    }
-
-    var characterResult = characters.AddOrUpdate(character.Id, character, updateValueFactory);
-
-    if (characterResult is not null && persist) {
-      await Persist(characterResult);
-    }
-
-    return characterResult;
-  }
-
-  private async Task Persist(Character character) {
+  public async Task Persist(Character character) {
     using var scope = _serviceProvider.CreateScope();
     var _context = scope.ServiceProvider.GetRequiredService<IContext>();
 
@@ -166,22 +128,23 @@ public class CharacterService : ICharacterService {
 
     await PersistPlayerCharacters(player);
 
-    if (Characters.TryRemove(player.Id, out _)) {
-      _playerService.ClearPlayer(player);
-    }
+    Characters.RemoveAll(cl => cl.Item1 == player.Id);
+    _playerService.ClearPlayer(player);
 
   }
 
   public async Task PersistPlayerCharacters(Player player) {
-    if (!Characters.TryGetValue(player.Id, out var characters) || !characters.Any()) {
+    if (!Characters.Any(cl => cl.Item1 == player.Id)) {
       return;
     }
 
     using var scope = _serviceProvider.CreateScope();
     var _context = scope.ServiceProvider.GetRequiredService<IContext>();
 
-    _context.Characters.UpdateRange(characters.Values);
+    _context.Characters.UpdateRange(await GetCharactersOf(player));
     await _context.SaveChangesAsync();
   }
+
+  public IEnumerable<Character> GetAll() => Characters.Select(cl => cl.Item2);
 
 }

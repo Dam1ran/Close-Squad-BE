@@ -11,7 +11,7 @@ public partial class MainHub : Hub<ITypedHubClient> {
 
   private async Task SendPlayerCharacters(Player player) {
     var characters = await _characterService.GetCharactersOf(player);
-    await Clients.Caller.SetCharacters(characters.Select(c => CharacterDto.FromCharacter(c)));
+    await Clients.Caller.SetCharacters(characters.Select(CharacterDto.FromCharacter));
   }
 
   private async Task SendSystemChatMessage(string text) {
