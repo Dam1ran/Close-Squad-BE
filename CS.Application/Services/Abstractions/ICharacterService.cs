@@ -5,6 +5,7 @@ using CS.Core.ValueObjects;
 namespace CS.Application.Services.Abstractions;
 public interface ICharacterService {
 
+  void Init();
   Task Create(Player player, Nickname characterNickname, CharacterClass characterClass, byte gender, CancellationToken cancellationToken = default);
   Task<IEnumerable<Character>> GetCharactersOf(Player player, CancellationToken cancellationToken = default);
   IEnumerable<Character> GetAll();

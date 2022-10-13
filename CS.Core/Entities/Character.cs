@@ -23,9 +23,10 @@ public class Character : CharacterStats {
   public Nickname Nickname { get; private set; }
   public CharacterClass CharacterClass { get; set; }
 
+
   [NotMapped]
   public CharacterStatus CharacterStatus { get; set; }
-  [NotMapped]
+
   public Position Position { get; set; } = new();
 
   public uint QuadrantIndex { get; set; }
@@ -33,15 +34,16 @@ public class Character : CharacterStats {
 
   public bool CanTravel() =>
     CharacterStatus == CharacterStatus.Awake &&
-    HP > 0;
+    HpStat.Current > 0;
 
   public bool CanMove() =>
     (CharacterStatus == CharacterStatus.Awake ||
     CharacterStatus == CharacterStatus.Engaged) &&
-    HP > 0;
+    HpStat.Current > 0;
 
   public bool CanArrive() =>
     CharacterStatus == CharacterStatus.Traveling &&
-    HP > 0;
+    HpStat.Current > 0;
+
 
 }

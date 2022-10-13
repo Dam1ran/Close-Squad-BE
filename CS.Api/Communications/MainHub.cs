@@ -129,7 +129,7 @@ public partial class MainHub : Hub<ITypedHubClient> {
   //   Debug.WriteLine(chatCommand.Text);
   // }
 
-  [Authorize(Policy = Api_Constants.AdministrationPolicy)]
+  // [Authorize(Policy = Api_Constants.AdministrationPolicy)]
   // [Authorize(Policy = Api_Constants.ManagementPolicy)]
   // [Authorize(Policy = Api_Constants.GameMasterPolicy)]
   // public async Task SendBanPlayer(Player player) {
@@ -147,7 +147,10 @@ public partial class MainHub : Hub<ITypedHubClient> {
         Title = "No character..."
       });
     } else {
-      currentPlayer = _playerService.ClearLogoutTime(currentPlayer);
+      if (!string.IsNullOrWhiteSpace(currentPlayer.ConnectionId)) {
+        await Clients.Client(currentPlayer.ConnectionId).Disconnect();
+      }
+      currentPlayer = _playerService.ClearLogoutTimeAndSetId(currentPlayer, Context.ConnectionId);
       await _hubService.SetCurrentPlayer(currentPlayer);
       await SendPlayerCharacters(currentPlayer);
     }
@@ -248,9 +251,11 @@ public partial class MainHub : Hub<ITypedHubClient> {
     character.CharacterStatus = CharacterStatus.Traveling;
     character.Position.Stop();
 
-    await Clients.Caller.UpdateCharacter(new { Id = character.Id, CharacterStatus = character.CharacterStatus });
+    _ = Clients.Caller.UpdateCharacter(new { Id = character.Id, CharacterStatus = character.CharacterStatus });
 
     var secondsToTravel = _characterEngine.TravelTo(characterTravelCall.TravelDirection, character, currentPlayer);
+
+    _ = SendSystemChatMessage($"{character.Nickname} will arrive in {secondsToTravel} seconds.");
 
   }
   public async Task CharacterMove(CharacterMoveCall characterMove) {

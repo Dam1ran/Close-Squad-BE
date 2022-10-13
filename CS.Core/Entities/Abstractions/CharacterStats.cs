@@ -1,36 +1,11 @@
-using System.Drawing;
 using CS.Core.Support;
 
 namespace CS.Core.Entities.Abstractions;
 public abstract class CharacterStats: Entity {
 
-  //-----------------HP---------------------------------
-  protected uint _hp;
-  public uint MaxHP { get; protected set; }
-  public uint HP {
-    get => _hp;
-    set {
-      if (value > MaxHP) {
-        _hp = MaxHP;
-      } else {
-        _hp = value;
-      }
-    }
-  }
-
-  //-----------------MP---------------------------------
-  protected uint _mp;
-  public uint MaxMP { get; protected set; }
-  public uint MP {
-    get => _mp;
-    set {
-      if (value > MaxMP) {
-        _mp = MaxMP;
-      } else {
-        _mp = value;
-      }
-    }
-  }
+  //-----------------Lvl--------------------------------
+  protected int _level;
+  public int Level { get => _level; protected set { _level = value; } }
 
   //-----------------Gender-----------------------------
   protected byte _gender;
@@ -47,6 +22,11 @@ public abstract class CharacterStats: Entity {
     }
   }
 
+  public Stat HpStat = new();
+  public Stat MpStat = new();
+  public Stat SpeedStat = new();
+
+/*
   //-----------------XP---------------------------------
   protected long _xp;
   public long XP { get => _xp; protected set { _xp = value; }  }
@@ -69,12 +49,6 @@ public abstract class CharacterStats: Entity {
 
   }
 
-  //-----------------Lvl--------------------------------
-  protected int _level;
-  public int Level { get => _level; protected set { _level = value; } }
-
   public float XP_Percent => Level_Constants.GetLevelAndPercent(_xp).Item2;
-
-
-
+*/
 }

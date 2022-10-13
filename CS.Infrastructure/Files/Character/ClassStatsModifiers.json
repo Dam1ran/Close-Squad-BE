@@ -1,0 +1,56 @@
+[
+  {
+    "CharacterClass": "Assassin",
+    "Hp": 0.8,
+    "Mp": 0.6,
+    "Speed": 1.15
+  },
+  {
+    "CharacterClass": "Berserk",
+    "Hp": 1.4,
+    "Mp": 0.5,
+    "Speed": 1.0
+  },
+  {
+    "CharacterClass": "Cupid",
+    "Hp": 0.8,
+    "Mp": 0.8,
+    "Speed": 1.0
+  },
+  {
+    "CharacterClass": "Doctor",
+    "Hp": 0.7,
+    "Mp": 0.7,
+    "Speed": 0.9
+  },
+  {
+    "CharacterClass": "Handyman",
+    "Hp": 1.2,
+    "Mp": 0.4,
+    "Speed": 0.8
+  },
+  {
+    "CharacterClass": "Medium",
+    "Hp": 0.7,
+    "Mp": 1.2,
+    "Speed": 0.9
+  },
+  {
+    "CharacterClass": "Occultist",
+    "Hp": 0.8,
+    "Mp": 0.8,
+    "Speed": 1.0
+  },
+  {
+    "CharacterClass": "Seer",
+    "Hp": 0.9,
+    "Mp": 0.8,
+    "Speed": 0.9
+  },
+  {
+    "CharacterClass": "Templar",
+    "Hp": 1.2,
+    "Mp": 0.6,
+    "Speed": 0.9
+  }
+]

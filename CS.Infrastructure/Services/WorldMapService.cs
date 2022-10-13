@@ -2,6 +2,7 @@ using System.Reflection;
 using CS.Application.Options;
 using CS.Application.Support.Utils;
 using CS.Core.Enums;
+using CS.Core.Exceptions;
 using CS.Core.Models;
 using CS.Core.Services.Interfaces;
 using Microsoft.Extensions.Logging;
@@ -28,7 +29,8 @@ public class WorldMapService : IWorldMapService {
         $"WorldMapSettings.json");
 
     using var settingsReader = new StreamReader(path);
-    _worldMapSettings = JsonConvert.DeserializeObject<WorldMapSettings>(settingsReader.ReadToEnd());
+    _worldMapSettings = JsonConvert.DeserializeObject<WorldMapSettings>(settingsReader.ReadToEnd())
+      ?? throw new NotFoundException("WorldMapSettings.json could not be loaded");
 
     settingsReader.Close();
     settingsReader.Dispose();
@@ -39,7 +41,8 @@ public class WorldMapService : IWorldMapService {
         $"QuadrantsWithData.json");
 
     using var quadrantsWithDataReader = new StreamReader(path);
-    var quadrantsWithData = JsonConvert.DeserializeObject<List<Quadrant>>(quadrantsWithDataReader.ReadToEnd());
+    var quadrantsWithData = JsonConvert.DeserializeObject<List<Quadrant>>(quadrantsWithDataReader.ReadToEnd())
+      ?? throw new NotFoundException("QuadrantsWithData.json could not be loaded");
 
     quadrantsWithDataReader.Close();
     quadrantsWithDataReader.Dispose();

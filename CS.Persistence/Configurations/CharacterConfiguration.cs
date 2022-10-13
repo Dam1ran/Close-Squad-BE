@@ -28,11 +28,61 @@ public class CharacterConfiguration : EntityConfiguration<Character> {
     .Navigation(c => c.Nickname)
     .IsRequired();
 
-    builder.Ignore(c => c.CharacterStatus);
-    builder.Ignore(c => c.Position);
 
-    builder.Property(p => p.HP).HasField("_hp");
-    builder.Property(p => p.MP).HasField("_mp");
+    builder.Ignore(c => c.CharacterStatus);
+
+
+    builder.OwnsOne(player => player.Position, position => {
+      position
+        .Property(p => p.LocationX)
+        .HasColumnName("LocationX")
+        .HasDefaultValue(Position.originX);
+
+      position
+        .Property(p => p.LocationY)
+        .HasColumnName("LocationY")
+        .HasDefaultValue(Position.originY);
+
+    })
+    .Navigation(c => c.Position)
+    .IsRequired();
+
+    builder.OwnsOne(player => player.HpStat, hpStat => {
+      hpStat
+        .Property(p => p.Current)
+        .HasField("_currentCalculated")
+        .HasDefaultValue(-1)
+        .HasColumnName("HP");
+
+      hpStat.Ignore(mps => mps.Base);
+    })
+    .Navigation(c => c.HpStat)
+    .IsRequired();
+
+    builder.OwnsOne(player => player.MpStat, mpStat => {
+      mpStat
+        .Property(p => p.Current)
+        .HasField("_currentCalculated")
+        .HasDefaultValue(-1)
+        .HasColumnName("MP");
+
+      mpStat.Ignore(mps => mps.Base);
+    })
+    .Navigation(c => c.MpStat)
+    .IsRequired();
+
+    builder.OwnsOne(player => player.SpeedStat, speedStat => {
+      speedStat
+        .Property(p => p.Current)
+        .HasField("_currentCalculated")
+        .HasDefaultValue(-1)
+        .HasColumnName("Speed");
+
+      speedStat.Ignore(mps => mps.Base);
+    })
+    .Navigation(c => c.SpeedStat)
+    .IsRequired();
+
 
   }
 

@@ -17,6 +17,8 @@ public class Player: Entity {
 
 
   [NotMapped]
+  public string? ConnectionId { get; set; }
+  [NotMapped]
   public uint? QuadrantIndex { get; set; }
 
   [NotMapped]

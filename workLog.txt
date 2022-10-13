@@ -1,3 +1,20 @@
+
+experience work
+stat regeneration work
+
+----------------
+
+/// push XIX
+
+stats/class modifiers loading
+reload after character creation
+twice connect prevention
+removed vectors use variables instead
+started base stats
+movement works
+hp/mp works
+decreased update time
+
 /// push XVIII
 
 periodic character send

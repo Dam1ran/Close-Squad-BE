@@ -1,12 +1,16 @@
+using System.Reflection;
 using CS.Application.Persistence.Abstractions;
 using CS.Application.Persistence.Abstractions.Repositories;
 using CS.Application.Services.Abstractions;
 using CS.Application.Support.Utils;
 using CS.Core.Entities;
 using CS.Core.Enums;
+using CS.Core.Exceptions;
+using CS.Core.Models;
 using CS.Core.Services.Interfaces;
 using CS.Core.ValueObjects;
 using Microsoft.Extensions.DependencyInjection;
+using Newtonsoft.Json;
 
 namespace CS.Application.Services.Implementations;
 public class CharacterService : ICharacterService {
@@ -21,6 +25,7 @@ public class CharacterService : ICharacterService {
   private const int CharacterBufferClearIntervalSeconds = 60;
 
   private readonly object listLock = new object();
+  private CharacterBaseStatsHelper characterBaseStatsHelper = new();
 
   public CharacterService(
     IServiceProvider serviceProvider,
@@ -33,6 +38,35 @@ public class CharacterService : ICharacterService {
     _tickService = Check.NotNull(tickService, nameof(tickService));
 
     _tickService.on_60s_tick += ClearLoggedOutPlayersAndCharacters;
+  }
+
+  public void Init() {
+
+    var characterBaseStatsPath = Path.Combine(Path.GetDirectoryName(
+      Assembly.GetExecutingAssembly().Location)!,
+      "Files/Character",
+      $"CharacterBaseStats.json");
+
+    using var characterBaseStatsReader = new StreamReader(characterBaseStatsPath);
+    characterBaseStatsHelper.CharacterBaseStats
+      = JsonConvert.DeserializeObject<CharacterBaseStats>(characterBaseStatsReader.ReadToEnd())
+      ?? throw new NotFoundException("CharacterBaseStats.json could not be loaded");
+
+    characterBaseStatsReader.Close();
+    characterBaseStatsReader.Dispose();
+
+    var classStatsModifiersPath = Path.Combine(Path.GetDirectoryName(
+      Assembly.GetExecutingAssembly().Location)!,
+      "Files/Character",
+      $"ClassStatsModifiers.json");
+
+    using var classStatsModifiersReader = new StreamReader(classStatsModifiersPath);
+    characterBaseStatsHelper.ClassStatsModifiers
+      = JsonConvert.DeserializeObject<List<ClassStatsModifiers>>(classStatsModifiersReader.ReadToEnd())
+      ?? throw new NotFoundException("ClassStatsModifiers.json could not be loaded");
+
+    classStatsModifiersReader.Close();
+    classStatsModifiersReader.Dispose();
 
   }
 
@@ -69,6 +103,7 @@ public class CharacterService : ICharacterService {
 
         foreach (var character in repoCharacters) {
           if (Characters.SingleOrDefault(cl => cl.Item2.Id == character.Id) is null) {
+            characterBaseStatsHelper.AssignBaseStats(character);
             Characters.Add(new (player.Id, character));
           }
         }
@@ -98,7 +133,7 @@ public class CharacterService : ICharacterService {
     character.CharacterStatus
       = character.CharacterStatus != CharacterStatus.Astray
       ? CharacterStatus.Astray
-      : character.HP > 0
+      : character.HpStat.Current > 0
       ? CharacterStatus.Awake
       : CharacterStatus.Dead;
 
@@ -146,5 +181,19 @@ public class CharacterService : ICharacterService {
   }
 
   public IEnumerable<Character> GetAll() => Characters.Select(cl => cl.Item2);
+
+}
+
+
+public class CharacterBaseStatsHelper {
+  public CharacterBaseStats CharacterBaseStats { get; set; } = new CharacterBaseStats();
+  public List<ClassStatsModifiers> ClassStatsModifiers { get; set; } = new ();
+
+  public void AssignBaseStats(Character character) =>
+    CharacterBaseStats
+    .AssignBaseStats(
+      character,
+      ClassStatsModifiers.Where(csm => csm.CharacterClass == character.CharacterClass).First()
+    );
 
 }

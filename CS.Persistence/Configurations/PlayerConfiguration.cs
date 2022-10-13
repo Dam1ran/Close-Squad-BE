@@ -41,6 +41,7 @@ public class PlayerConfiguration : EntityConfiguration<Player> {
       .HasDefaultValue("")
       .IsRequired();
 
+    builder.Ignore(c => c.ConnectionId);
     builder.Ignore(c => c.QuadrantIndex);
     builder.Ignore(c => c.LogoutAt);
     builder.Ignore(c => c.QuadrantsUrl);

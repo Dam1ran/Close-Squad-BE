@@ -67,6 +67,7 @@ public class CharacterController : ControllerBase {
         (byte)characterCreationDto.Gender,
         cancellationToken);
 
+    await _characterService.PersistAndClearPlayerCharacters(player);
     await _mainHubContext.Clients.User(nickname.Value).Reconnect();
 
     return NoContent();

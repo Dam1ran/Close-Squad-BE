@@ -119,13 +119,14 @@ public class PlayerService : IPlayerService {
 
   }
 
-  public Player ClearLogoutTime(Player player) {
+  public Player ClearLogoutTimeAndSetId(Player player, string connectionId) {
 
     return Players.AddOrUpdate(
       player.Nickname.ValueLowerCase,
       player,
       (key, existing) =>
         {
+          existing.ConnectionId = connectionId;
           existing.LogoutAt = null;
           return existing;
         });

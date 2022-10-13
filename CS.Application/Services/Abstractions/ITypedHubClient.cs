@@ -12,5 +12,6 @@ public interface ITypedHubClient {
   Task SendScoutQuadrantReport(ScoutQuadrantReport scoutQuadrantReport);
   Task SendServerDialog(ServerDialog dialog);
   Task Reconnect();
+  Task Disconnect();
 
 }

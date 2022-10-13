@@ -1,5 +1,4 @@
 using System.Collections.Concurrent;
-using System.Numerics;
 using CS.Api.Communications;
 using CS.Application.Models;
 using CS.Application.Services.Abstractions;
@@ -22,6 +21,8 @@ public class CharacterEngine : ICharacterEngine {
 
   private readonly ConcurrentDictionary<string, DelayedTask> Tasks = new();
 
+  private const float _1000MsSpeedMultiplier = 0.01F;
+  private const float _100MsSecondSpeedMultiplier = 0.001F;
 
   public CharacterEngine(
     IPlayerService playerService,
@@ -38,13 +39,11 @@ public class CharacterEngine : ICharacterEngine {
     _hubService = Check.NotNull(hubService, nameof(hubService));
 
     _tickService.on_1000ms_tick += StartDelayedTasks;
-    _tickService.on_1000ms_tick += MoveCharacters;
-    _tickService.on_1000ms_tick += SendCharacters;
+    _tickService.on_100ms_tick += MoveCharacters;
+    _tickService.on_100ms_tick += SendCharacters;
   }
 
   public int TravelTo(TravelDirection travelDirection, Character character, Player player) {
-    // TODO: get speed
-    var speed = 2.0; // M/S
 
     var hypotenuseHalfLength = 0.5;
     if (travelDirection == TravelDirection.NE
@@ -59,7 +58,7 @@ public class CharacterEngine : ICharacterEngine {
     var arrivingQuadrantSpeedModifier = _worldMapService.GetQuadrantByIndex(arrivingQuadrantIndex).SpeedModifier;
 
     var travelLength = hypotenuseHalfLength / currentQuadrantSpeedModifier + hypotenuseHalfLength / arrivingQuadrantSpeedModifier;
-    var secondsToTravel = (int)((travelLength * WorldMapService.QuadrantSizeInMeters) / speed);
+    var secondsToTravel = (int)((travelLength * WorldMapService.QuadrantSizeInMeters) / (character.SpeedStat.Current * _1000MsSpeedMultiplier));
 
     var previousQuadrantIndex = character.QuadrantIndex;
 
@@ -81,10 +80,10 @@ public class CharacterEngine : ICharacterEngine {
             Id = character.Id,
             CharacterStatus = character.CharacterStatus,
             QuadrantIndex = character.QuadrantIndex,
-            X = character.Position.Location.X,
-            Y = character.Position.Location.Y,
-            xDestination = character.Position.Location.X,
-            yDestination = character.Position.Location.Y,
+            X = character.Position.LocationX,
+            Y = character.Position.LocationY,
+            xDestination = character.Position.LocationX,
+            yDestination = character.Position.LocationY,
           });
 
         await UpdatePlayerQuadrant(player, previousQuadrantIndex, character);
@@ -132,12 +131,8 @@ public class CharacterEngine : ICharacterEngine {
 
   private void MoveCharacters(object? sender, EventArgs e) {
 
-    // TODO: get speed
-    var speed = 2.0F; // M/S
-
-    foreach (var character in _characterService.GetAll().Where(c => !c.Position.IsAtDestination(speed))) {
-      character.Position.Move(speed);
-      _ = _mainHubContext.Clients.User("Mime").UpdateCharacter(new { Id = character.Id, X = character.Position.Location.X, Y = character.Position.Location.Y });
+    foreach (var character in _characterService.GetAll()) {
+      character.Position.Move(character.SpeedStat.Current * _100MsSecondSpeedMultiplier);
     }
 
   }

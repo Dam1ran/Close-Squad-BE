@@ -28,7 +28,7 @@ public class PlayerRepository : Repository, IPlayerRepository {
     _context.Characters
       .Where(c => c.PlayerId == playerId)
       .OrderByDescending(c => c.Level)
-        .ThenByDescending(c => c.XP)
+        // .ThenByDescending(c => c.XP)
       .AsNoTracking()
       .ToListAsync(cancellationToken);
 

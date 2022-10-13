@@ -11,7 +11,7 @@ public interface IPlayerService {
   IReadOnlyList<string> GetPlayerNicknamesInBigQuadrantOf(Player player);
   List<Player> GetPlayersInQuadrant(uint quadrantIndex);
   Player UpdatePlayerQuadrant(Player player, uint? quadrantIndex);
-  Player ClearLogoutTime(Player player);
+  Player ClearLogoutTimeAndSetId(Player player, string connectionId);
   void ClearPlayer(Player player);
   void SetLogoutTime(Player player);
 
