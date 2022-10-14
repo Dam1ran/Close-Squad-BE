@@ -21,8 +21,8 @@ public class CharacterEngine : ICharacterEngine {
 
   private readonly ConcurrentDictionary<string, DelayedTask> Tasks = new();
 
-  private const float _1000MsSpeedMultiplier = 0.01F;
-  private const float _100MsSecondSpeedMultiplier = 0.001F;
+  private const double _1000MsSpeedMultiplier = 0.01F;
+  private const double _100MsSecondSpeedMultiplier = 0.001F;
 
   public CharacterEngine(
     IPlayerService playerService,
@@ -39,8 +39,9 @@ public class CharacterEngine : ICharacterEngine {
     _hubService = Check.NotNull(hubService, nameof(hubService));
 
     _tickService.on_1000ms_tick += StartDelayedTasks;
-    _tickService.on_100ms_tick += MoveCharacters;
+    _tickService.on_100ms_tick += CharactersMoveTick;
     _tickService.on_100ms_tick += SendCharacters;
+    _tickService.on_1000ms_tick += CharactersRegenerationTick;
   }
 
   public int TravelTo(TravelDirection travelDirection, Character character, Player player) {
@@ -58,7 +59,7 @@ public class CharacterEngine : ICharacterEngine {
     var arrivingQuadrantSpeedModifier = _worldMapService.GetQuadrantByIndex(arrivingQuadrantIndex).SpeedModifier;
 
     var travelLength = hypotenuseHalfLength / currentQuadrantSpeedModifier + hypotenuseHalfLength / arrivingQuadrantSpeedModifier;
-    var secondsToTravel = (int)((travelLength * WorldMapService.QuadrantSizeInMeters) / (character.SpeedStat.Current * _1000MsSpeedMultiplier));
+    var secondsToTravel = (int)((travelLength * WorldMapService.QuadrantSizeInMeters) / (character.CharacterStats.Speed.Current * _1000MsSpeedMultiplier));
 
     var previousQuadrantIndex = character.QuadrantIndex;
 
@@ -129,10 +130,10 @@ public class CharacterEngine : ICharacterEngine {
 
   }
 
-  private void MoveCharacters(object? sender, EventArgs e) {
+  private void CharactersMoveTick(object? sender, EventArgs e) {
 
     foreach (var character in _characterService.GetAll()) {
-      character.Position.Move(character.SpeedStat.Current * _100MsSecondSpeedMultiplier);
+      character.Position.Move(character.CharacterStats.Speed.Current * _100MsSecondSpeedMultiplier);
     }
 
   }
@@ -141,6 +142,16 @@ public class CharacterEngine : ICharacterEngine {
 
     foreach (var group in _characterService.GetAll().GroupBy(c => c.PlayerId)) {
       _ = _hubService.SendUpdateCharacters(group.Key, group.Select(CharacterDto.FromCharacter));
+    }
+
+  }
+
+  private void CharactersRegenerationTick(object? sender, EventArgs e) {
+
+    foreach (var character in _characterService.GetAll()) {
+      if (character.IsAllowedToRegenerate()) {
+        character.RegenerationTick();
+      }
     }
 
   }

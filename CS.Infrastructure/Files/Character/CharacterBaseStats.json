@@ -1,5 +1,7 @@
 {
-  "Hp": 100,
-  "Mp": 100,
-  "Speed": 200
+  "Hp": 100.0,
+  "HpRegeneration": 0.5,
+  "Mp": 100.0,
+  "MpRegeneration": 0.5,
+  "Speed": 200.0
 }

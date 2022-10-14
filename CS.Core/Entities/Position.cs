@@ -3,18 +3,18 @@ using CS.Core.Enums;
 namespace CS.Core.Entities;
 public class Position {
 
-  public const float ArrivingEdgePercent = 8.0F;
-  public const float originX = 50;
-  public const float originY = 50;
+  public const double ArrivingEdgePercent = 8.0F;
+  public const double originX = 50;
+  public const double originY = 50;
 
-  public float LocationX { get; private set; } = originX;
-  public float LocationY { get; private set; } = originY;
+  public double LocationX { get; private set; } = originX;
+  public double LocationY { get; private set; } = originY;
 
-  protected float DestinationX { get; private set; } = originX;
-  protected float DestinationY { get; private set; } = originY;
+  protected double DestinationX { get; private set; } = originX;
+  protected double DestinationY { get; private set; } = originY;
 
-  private float normalizedHeadingX;
-  private float normalizedHeadingY;
+  private double normalizedHeadingX;
+  private double normalizedHeadingY;
 
   public void SetDestination(float x, float y) {
     DestinationX = x;
@@ -81,7 +81,7 @@ public class Position {
 
   }
 
-  public void Move(float distance) {
+  public void Move(double distance) {
 
     var firstCathetus = (LocationX - DestinationX);
     var secondCathetus = (LocationY - DestinationY);

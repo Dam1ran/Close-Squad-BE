@@ -14,6 +14,7 @@ EF Core
 Swagger
 Swashbuckle
 MediatR
+LinQ
 SendGrid
 SignalR
 SQL

@@ -274,6 +274,7 @@ public partial class MainHub : Hub<ITypedHubClient> {
     }
 
     character.Position.SetDestination(characterMove.X, characterMove.Y);
+
   }
 
   public async Task ScoutQuadrant(CharacterScoutCall characterScoutCall) {
@@ -306,6 +307,28 @@ public partial class MainHub : Hub<ITypedHubClient> {
     };
 
     await Clients.Caller.SendScoutQuadrantReport(report);
+
+  }
+
+  public async Task CharacterTeleportToNearest(CharacterCall characterCall) {
+    var currentPlayer = await GetCurrentPlayer();
+    if (currentPlayer is null) {
+      return;
+    }
+
+    var character = _characterService.GetCharacterOf(currentPlayer, characterCall.CharacterId);
+    if (character is null) {
+      return;
+    }
+
+    // TODO
+
+    character.UpdateStats((characterStats) => {
+      characterStats.Hp.SetCurrentByPercent(50);
+      characterStats.Mp.SetCurrentByPercent(25);
+      return characterStats;
+    });
+    character.CharacterStatus = CharacterStatus.Awake;
 
   }
 

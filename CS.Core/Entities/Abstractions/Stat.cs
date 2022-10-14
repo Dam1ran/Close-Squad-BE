@@ -2,74 +2,60 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace CS.Core.Entities.Abstractions;
 public class Stat {
-
-  private long _base;
+  public event EventHandler? on_zero_current;
+  private double _base;
   [NotMapped]
-  public long Base {
+  public double Base {
     get => _base;
     set {
       _base = value;
       _maxCalculated = value;
-      if (_currentCalculated < 0) {
-        _currentCalculated = value;
+      if (Current < 0) {
+        Current = value;
       }
     }
   }
   private double _maxModifierPercent;
   private double _maxModifierAmount;
-  private long _maxCalculated;
-  public long Max { get => _maxCalculated; }
-  private long _currentCalculated;
-  public long Current { get => _currentCalculated; }
+  private double _maxCalculated;
+  public double Max { get => _maxCalculated; }
+  public double Current { get; private set; }
 
-  private readonly object maxModifierPercentLock = new object();
-  private readonly object maxModifierAmountLock = new object();
-  private readonly object maxCalculatedLock = new object();
-
-  private readonly object currentLock = new object();
+  [NotMapped]
+  public double RegenerationAmountPerTick { get; set; }
 
   public void AddMaxPercent(double maxPercent) {
-    lock (maxModifierPercentLock) {
-      _maxModifierPercent += maxPercent;
-    }
+    _maxModifierPercent += maxPercent;
 
     RecalculateMax();
   }
 
   public void AddMaxAmount(double maxAmount) {
-    lock (maxModifierAmountLock) {
-      _maxModifierAmount += maxAmount;
-    }
+    _maxModifierAmount += maxAmount;
 
     RecalculateMax();
   }
 
-  private void RecalculateMax() {
-    lock (maxCalculatedLock) {
-      _maxCalculated = (long)Math.Floor(_base + _base * _maxModifierPercent * 0.01 + _maxModifierAmount);
-    }
-  }
+  private void RecalculateMax() => _maxCalculated = _base + _base * _maxModifierPercent * 0.01 + _maxModifierAmount;
 
-  public void AddCurrentPercentage(double percent) {
+  public void AddCurrentByMaxPercent(double percent) => AddCurrentAmount(_maxCalculated * percent * 0.01);
+  public void SetCurrentByPercent(double percent) => Current = Max * percent * 0.01;
+  public void AddCurrentByPercent(double percent) => AddCurrentAmount(Current * percent * 0.01);
 
-    lock (currentLock) {
-      AddCurrentAmount((long)Math.Floor(_base * percent * 0.01));
-    }
+  public void AddCurrentAmount(double amount) {
 
-  }
-
-  public void AddCurrentAmount(long amount) {
-
-    var sumValue = _currentCalculated;
-    Interlocked.Add(ref sumValue, amount);
+    var sumValue = Current + amount;
     if (sumValue >= Max) {
-      Interlocked.Exchange(ref _currentCalculated, Max);
+      Current = Max;
     } else if (sumValue <= 0) {
-      Interlocked.Exchange(ref _currentCalculated, 0);
+      Current = 0;
+      on_zero_current?.Invoke(this, EventArgs.Empty);
     } else {
-      Interlocked.Exchange(ref _currentCalculated, sumValue);
+      Current = sumValue;
     }
 
   }
+
+  public void RegenerationTick() => AddCurrentAmount(RegenerationAmountPerTick);
 
 }

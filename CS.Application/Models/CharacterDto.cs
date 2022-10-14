@@ -11,15 +11,15 @@ public class CharacterDto {
   public CharacterClass CharacterClass { get; set; }
   public CharacterStatus CharacterStatus { get; set; }
 
-  public long MaxHP { get; set; }
-  public long HP { get; set; }
-  public long MaxMP { get; set; }
-  public long MP { get; set; }
+  public double MaxHp { get; set; }
+  public double Hp { get; set; }
+  public double MaxMp { get; set; }
+  public double Mp { get; set; }
 
   public double X { get; set; }
   public double Y { get; set; }
 
-  public float XP_Percent { get; set; }
+  public double XpPercent { get; set; }
 
 
   public static CharacterDto FromCharacter(Character character) =>
@@ -30,11 +30,11 @@ public class CharacterDto {
       Level = character.Level,
       CharacterClass = character.CharacterClass,
       CharacterStatus = character.CharacterStatus,
-      MaxHP = character.HpStat.Max,
-      HP = character.HpStat.Current,
-      MaxMP = character.MpStat.Max,
-      MP = character.MpStat.Current,
-      // XP_Percent = character.XP_Percent,
+      MaxHp = character.CharacterStats.Hp.Max,
+      Hp = character.CharacterStats.Hp.Current,
+      MaxMp = character.CharacterStats.Mp.Max,
+      Mp = character.CharacterStats.Mp.Current,
+      XpPercent = character.XpPercent,
       X = character.Position.LocationX,
       Y = character.Position.LocationY
     };

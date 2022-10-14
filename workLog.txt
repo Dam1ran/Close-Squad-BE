@@ -1,8 +1,11 @@
 
-experience work
-stat regeneration work
-
 ----------------
+
+/// push XX
+
+experience work
+changed stats to double
+stat regeneration work
 
 /// push XIX
 

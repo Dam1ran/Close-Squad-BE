@@ -47,42 +47,39 @@ public class CharacterConfiguration : EntityConfiguration<Character> {
     .Navigation(c => c.Position)
     .IsRequired();
 
-    builder.OwnsOne(player => player.HpStat, hpStat => {
-      hpStat
-        .Property(p => p.Current)
-        .HasField("_currentCalculated")
-        .HasDefaultValue(-1)
-        .HasColumnName("HP");
+    builder.OwnsOne(player => player.CharacterStats, characterStats => {
 
-      hpStat.Ignore(mps => mps.Base);
-    })
-    .Navigation(c => c.HpStat)
-    .IsRequired();
+      characterStats.OwnsOne(cs => cs.Hp, hp => {
+        hp
+          .Property(h => h.Current)
+          .HasDefaultValue(-1)
+          .HasColumnName("HP");
 
-    builder.OwnsOne(player => player.MpStat, mpStat => {
-      mpStat
-        .Property(p => p.Current)
-        .HasField("_currentCalculated")
-        .HasDefaultValue(-1)
-        .HasColumnName("MP");
+        hp.Ignore(h => h.Base);
+        hp.Ignore(h => h.RegenerationAmountPerTick);
+      });
 
-      mpStat.Ignore(mps => mps.Base);
-    })
-    .Navigation(c => c.MpStat)
-    .IsRequired();
+      characterStats.OwnsOne(cs => cs.Mp, mp => {
+        mp
+          .Property(m => m.Current)
+          .HasDefaultValue(-1)
+          .HasColumnName("MP");
 
-    builder.OwnsOne(player => player.SpeedStat, speedStat => {
-      speedStat
-        .Property(p => p.Current)
-        .HasField("_currentCalculated")
-        .HasDefaultValue(-1)
-        .HasColumnName("Speed");
+        mp.Ignore(m => m.Base);
+        mp.Ignore(m => m.RegenerationAmountPerTick);
+      });
 
-      speedStat.Ignore(mps => mps.Base);
-    })
-    .Navigation(c => c.SpeedStat)
-    .IsRequired();
+      characterStats.OwnsOne(cs => cs.Speed, speed => {
+        speed
+          .Property(m => m.Current)
+          .HasDefaultValue(-1)
+          .HasColumnName("Speed");
 
+        speed.Ignore(s => s.Base);
+        speed.Ignore(s => s.RegenerationAmountPerTick);
+      });
+
+    });
 
   }
 

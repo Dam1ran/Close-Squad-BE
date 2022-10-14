@@ -104,6 +104,7 @@ public class CharacterService : ICharacterService {
         foreach (var character in repoCharacters) {
           if (Characters.SingleOrDefault(cl => cl.Item2.Id == character.Id) is null) {
             characterBaseStatsHelper.AssignBaseStats(character);
+            characterBaseStatsHelper.ConnectHandlers(character);
             Characters.Add(new (player.Id, character));
           }
         }
@@ -133,7 +134,7 @@ public class CharacterService : ICharacterService {
     character.CharacterStatus
       = character.CharacterStatus != CharacterStatus.Astray
       ? CharacterStatus.Astray
-      : character.HpStat.Current > 0
+      : character.CharacterStats.HasHp()
       ? CharacterStatus.Awake
       : CharacterStatus.Dead;
 
@@ -195,5 +196,8 @@ public class CharacterBaseStatsHelper {
       character,
       ClassStatsModifiers.Where(csm => csm.CharacterClass == character.CharacterClass).First()
     );
+
+  public void ConnectHandlers(Character character) =>
+    character.CharacterStats.Hp.on_zero_current += character.OnZeroHp;
 
 }
