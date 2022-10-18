@@ -47,39 +47,43 @@ public class CharacterConfiguration : EntityConfiguration<Character> {
     .Navigation(c => c.Position)
     .IsRequired();
 
-    builder.OwnsOne(player => player.CharacterStats, characterStats => {
+    builder.OwnsOne(player => player.Stats, stats => {
 
-      characterStats.OwnsOne(cs => cs.Hp, hp => {
+      stats.OwnsOne(cs => cs.Hp, hp => {
         hp
           .Property(h => h.Current)
           .HasDefaultValue(-1)
           .HasColumnName("HP");
 
         hp.Ignore(h => h.Base);
+        hp.Ignore(h => h.Cap);
         hp.Ignore(h => h.RegenerationAmountPerTick);
       });
 
-      characterStats.OwnsOne(cs => cs.Mp, mp => {
+      stats.OwnsOne(cs => cs.Mp, mp => {
         mp
           .Property(m => m.Current)
           .HasDefaultValue(-1)
           .HasColumnName("MP");
 
         mp.Ignore(m => m.Base);
+        mp.Ignore(m => m.Cap);
         mp.Ignore(m => m.RegenerationAmountPerTick);
       });
 
-      characterStats.OwnsOne(cs => cs.Speed, speed => {
-        speed
-          .Property(m => m.Current)
-          .HasDefaultValue(-1)
-          .HasColumnName("Speed");
-
-        speed.Ignore(s => s.Base);
-        speed.Ignore(s => s.RegenerationAmountPerTick);
-      });
+      stats.Ignore(m => m.PhysicalAttack);
+      stats.Ignore(m => m.PhysicalAttackSpeed);
+      stats.Ignore(m => m.PhysicalDefense);
+      stats.Ignore(m => m.Speed);
 
     });
+
+    builder
+      .HasMany(p => p.BarShortcuts)
+      .WithOne()
+      .HasForeignKey(c => c.CharacterId)
+      .OnDelete(DeleteBehavior.Cascade)
+      .IsRequired();
 
   }
 

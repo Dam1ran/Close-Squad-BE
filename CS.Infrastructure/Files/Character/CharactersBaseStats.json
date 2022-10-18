@@ -1,0 +1,101 @@
+[
+  {
+    "CharacterClass": "Assassin",
+    "Hp": 80.0,
+    "HpRegeneration": 0.05,
+    "Mp": 50,
+    "MpRegeneration": 0.03,
+    "PhysicalAttack": 24.0,
+    "PhysicalAttackSpeed": 250.0,
+    "PhysicalDefense": 14.0,
+    "Speed": 0.23
+  },
+  {
+    "CharacterClass": "Berserk",
+    "Hp": 140.0,
+    "HpRegeneration": 0.1,
+    "Mp": 40,
+    "MpRegeneration": 0.03,
+    "PhysicalAttack": 20.0,
+    "PhysicalAttackSpeed": 250.0,
+    "PhysicalDefense": 4.0,
+    "Speed": 0.2
+  },
+  {
+    "CharacterClass": "Cupid",
+    "Hp": 80,
+    "HpRegeneration": 0.04,
+    "Mp": 80,
+    "MpRegeneration": 0.04,
+    "PhysicalAttack": 24.0,
+    "PhysicalAttackSpeed": 250.0,
+    "PhysicalDefense": 4.0,
+    "Speed": 0.22
+  },
+  {
+    "CharacterClass": "Doctor",
+    "Hp": 70,
+    "HpRegeneration": 0.07,
+    "Mp": 70,
+    "MpRegeneration": 0.06,
+    "PhysicalAttack": 6.0,
+    "PhysicalAttackSpeed": 250.0,
+    "PhysicalDefense": 4.0,
+    "Speed": 0.18
+  },
+  {
+    "CharacterClass": "Handyman",
+    "Hp": 120,
+    "HpRegeneration": 0.08,
+    "Mp": 40,
+    "MpRegeneration": 0.03,
+    "PhysicalAttack": 6.0,
+    "PhysicalAttackSpeed": 250.0,
+    "PhysicalDefense": 4.0,
+    "Speed": 0.16
+  },
+  {
+    "CharacterClass": "Medium",
+    "Hp": 70,
+    "HpRegeneration": 0.05,
+    "Mp": 120,
+    "MpRegeneration": 0.9,
+    "PhysicalAttack": 6.0,
+    "PhysicalAttackSpeed": 250.0,
+    "PhysicalDefense": 4.0,
+    "Speed": 0.18
+  },
+  {
+    "CharacterClass": "Occultist",
+    "Hp": 80,
+    "HpRegeneration": 0.08,
+    "Mp": 80,
+    "MpRegeneration": 0.1,
+    "PhysicalAttack": 6.0,
+    "PhysicalAttackSpeed": 250.0,
+    "PhysicalDefense": 4.0,
+    "Speed": 0.2
+  },
+  {
+    "CharacterClass": "Seer",
+    "Hp": 90,
+    "HpRegeneration": 0.085,
+    "Mp": 80,
+    "MpRegeneration": 0.085,
+    "PhysicalAttack": 6.0,
+    "PhysicalAttackSpeed": 250.0,
+    "PhysicalDefense": 4.0,
+    "Speed": 0.18
+  },
+  {
+    "CharacterClass": "Templar",
+    "Hp": 120,
+    "HpRegeneration": 0.09,
+    "Mp": 60,
+    "MpRegeneration": 0.01,
+    "PhysicalAttack": 4.0,
+    "PhysicalAttackSpeed": 250.0,
+    "PhysicalDefense": 12.0,
+    "Speed": 0.185
+  }
+]

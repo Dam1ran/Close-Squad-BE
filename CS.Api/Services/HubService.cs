@@ -3,6 +3,7 @@ using CS.Application.Models;
 using CS.Application.Services.Abstractions;
 using CS.Application.Support.Utils;
 using CS.Core.Entities;
+using CS.Core.Enums;
 using CS.Core.Services.Interfaces;
 using Microsoft.AspNetCore.SignalR;
 
@@ -27,6 +28,8 @@ public class HubService : IHubService {
     _mainHubContext = Check.NotNull(mainHubContext, nameof(mainHubContext));
     _worldMapService = Check.NotNull(worldMapService, nameof(worldMapService));
     _tickService = Check.NotNull(tickService, nameof(tickService));
+
+    _tickService.on_100ms_tick += AggregateAndSendData;
   }
 
   public async Task SendAllUpdateQuadrantPlayerList(Player player, bool toSelf = false) {
@@ -52,6 +55,37 @@ public class HubService : IHubService {
       player.QuadrantsUrl = indexes;
     }
     await _mainHubContext.Clients.User(player.Nickname).SetCurrentPlayer(PlayerDto.FromPlayer(player));
+  }
+
+  private void AggregateAndSendData(object? sender, EventArgs e) {
+
+    var players = _playerService.GetPlayers();
+    foreach (var group in _characterService.GetAll().GroupBy(c => c.PlayerId)) {
+      var player = players.SingleOrDefault(p => p.Id == group.Key);
+      if (player is null) {
+        continue;
+      }
+
+      var data = new AggregatedDataDto {
+        ClientCharacters = group.Select(CharacterDto.FromCharacter)
+      };
+
+      if (player.QuadrantIndex.HasValue) {
+        data.CharactersInActiveQuadrant = _characterService
+          .GetAll()
+          .Where(
+            c => c.QuadrantIndex == player.QuadrantIndex &&
+            c.PlayerId != player.Id &&
+            c.CharacterStatus != CharacterStatus.Astray)
+          .Select(CharacterSimpleDto.FromCharacter);
+      }
+
+      // plus other stuff
+
+      _mainHubContext.Clients.User(player.Nickname).SendAggregatedData(data);
+
+    }
+
   }
 
 }

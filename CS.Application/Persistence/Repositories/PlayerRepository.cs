@@ -24,11 +24,12 @@ public class PlayerRepository : Repository, IPlayerRepository {
       .AsNoTracking()
       .SingleOrDefaultAsync(cancellationToken);
 
-  public Task<List<Character>> GetPlayerCharactersAsNoTrackingAsync(long playerId, CancellationToken cancellationToken) =>
+  public Task<List<Character>> GetPlayerCharactersWithShortcutsAsNoTrackingAsync(long playerId, CancellationToken cancellationToken) =>
     _context.Characters
       .Where(c => c.PlayerId == playerId)
+      .Include(c => c.BarShortcuts)
       .OrderByDescending(c => c.Level)
-        // .ThenByDescending(c => c.XP)
+        .ThenByDescending(c => c.Xp)
       .AsNoTracking()
       .ToListAsync(cancellationToken);
 

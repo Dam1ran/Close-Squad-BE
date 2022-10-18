@@ -25,7 +25,7 @@ public class CharacterService : ICharacterService {
   private const int CharacterBufferClearIntervalSeconds = 60;
 
   private readonly object listLock = new object();
-  private CharacterBaseStatsHelper characterBaseStatsHelper = new();
+  private CharacterStatsHelper characterStatsHelper = new();
 
   public CharacterService(
     IServiceProvider serviceProvider,
@@ -42,31 +42,31 @@ public class CharacterService : ICharacterService {
 
   public void Init() {
 
-    var characterBaseStatsPath = Path.Combine(Path.GetDirectoryName(
+    var charactersBaseStatsPath = Path.Combine(Path.GetDirectoryName(
       Assembly.GetExecutingAssembly().Location)!,
       "Files/Character",
-      $"CharacterBaseStats.json");
+      $"CharactersBaseStats.json");
 
-    using var characterBaseStatsReader = new StreamReader(characterBaseStatsPath);
-    characterBaseStatsHelper.CharacterBaseStats
-      = JsonConvert.DeserializeObject<CharacterBaseStats>(characterBaseStatsReader.ReadToEnd())
-      ?? throw new NotFoundException("CharacterBaseStats.json could not be loaded");
+    using var charactersBaseStatsReader = new StreamReader(charactersBaseStatsPath);
+    characterStatsHelper.CharactersBaseStats
+      = JsonConvert.DeserializeObject<List<CharacterBaseStats>>(charactersBaseStatsReader.ReadToEnd())
+      ?? throw new NotFoundException("CharactersBaseStats.json could not be loaded");
 
-    characterBaseStatsReader.Close();
-    characterBaseStatsReader.Dispose();
+    charactersBaseStatsReader.Close();
+    charactersBaseStatsReader.Dispose();
 
-    var classStatsModifiersPath = Path.Combine(Path.GetDirectoryName(
+    var levelClassesStatsModifiersPath = Path.Combine(Path.GetDirectoryName(
       Assembly.GetExecutingAssembly().Location)!,
       "Files/Character",
-      $"ClassStatsModifiers.json");
+      $"LevelClassStatsModifiers.json");
 
-    using var classStatsModifiersReader = new StreamReader(classStatsModifiersPath);
-    characterBaseStatsHelper.ClassStatsModifiers
-      = JsonConvert.DeserializeObject<List<ClassStatsModifiers>>(classStatsModifiersReader.ReadToEnd())
+    using var classesStatsModifiersReader = new StreamReader(levelClassesStatsModifiersPath);
+    characterStatsHelper.LevelClassesStatsModifiers
+      = JsonConvert.DeserializeObject<List<LevelClassStatsModifiers>>(classesStatsModifiersReader.ReadToEnd())
       ?? throw new NotFoundException("ClassStatsModifiers.json could not be loaded");
 
-    classStatsModifiersReader.Close();
-    classStatsModifiersReader.Dispose();
+    classesStatsModifiersReader.Close();
+    classesStatsModifiersReader.Dispose();
 
   }
 
@@ -97,14 +97,19 @@ public class CharacterService : ICharacterService {
     using var scope = _serviceProvider.CreateScope();
     var _playerRepo = scope.ServiceProvider.GetRequiredService<IPlayerRepository>();
 
-    var repoCharacters = await _playerRepo.GetPlayerCharactersAsNoTrackingAsync(player.Id, cancellationToken);
+    var repoCharacters = await _playerRepo.GetPlayerCharactersWithShortcutsAsNoTrackingAsync(player.Id, cancellationToken);
     if (repoCharacters.Any()) {
       lock (listLock) {
 
         foreach (var character in repoCharacters) {
           if (Characters.SingleOrDefault(cl => cl.Item2.Id == character.Id) is null) {
-            characterBaseStatsHelper.AssignBaseStats(character);
-            characterBaseStatsHelper.ConnectHandlers(character);
+            characterStatsHelper.ConnectHandlersAndInit(character);
+            characterStatsHelper.RecalculateStats(character);
+            character.on_zero_hp += (sender, args) => {
+              if (sender is Character characterToPersist) {
+                _ = Task.Run(() => Persist(characterToPersist)).ConfigureAwait(false);
+              }
+            };
             Characters.Add(new (player.Id, character));
           }
         }
@@ -134,7 +139,7 @@ public class CharacterService : ICharacterService {
     character.CharacterStatus
       = character.CharacterStatus != CharacterStatus.Astray
       ? CharacterStatus.Astray
-      : character.CharacterStats.HasHp()
+      : character.Stats.HasHp()
       ? CharacterStatus.Awake
       : CharacterStatus.Dead;
 
@@ -183,21 +188,7 @@ public class CharacterService : ICharacterService {
 
   public IEnumerable<Character> GetAll() => Characters.Select(cl => cl.Item2);
 
-}
-
-
-public class CharacterBaseStatsHelper {
-  public CharacterBaseStats CharacterBaseStats { get; set; } = new CharacterBaseStats();
-  public List<ClassStatsModifiers> ClassStatsModifiers { get; set; } = new ();
-
-  public void AssignBaseStats(Character character) =>
-    CharacterBaseStats
-    .AssignBaseStats(
-      character,
-      ClassStatsModifiers.Where(csm => csm.CharacterClass == character.CharacterClass).First()
-    );
-
-  public void ConnectHandlers(Character character) =>
-    character.CharacterStats.Hp.on_zero_current += character.OnZeroHp;
+  public async Task<IEnumerable<BarShortcut>> GetAllCharacterBarShortcutsOfAsync(Player player) =>
+    (await GetCharactersOf(player)).SelectMany(c => c.BarShortcuts);
 
 }

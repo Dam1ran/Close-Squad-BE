@@ -1,6 +1,18 @@
 
 ----------------
 
+/// push XXI
+
+persist on zero hp
+cap to stats
+XP lost field
+some tick method refactor
+started PA, PAS, PD
+shortcuts part I
+attack speed tryouts
+send other players characters to active quadrant
+made some stats level dependent
+
 /// push XX
 
 experience work

@@ -6,11 +6,12 @@ public class CharacterSimpleDto {
   public long Id { get; set; }
   public uint QuadrantIndex { get; set; }
   public string Nickname { get; set; } = "";
-  public int Level { get; set; }
 
   public CharacterClass CharacterClass { get; set; }
   public CharacterStatus CharacterStatus { get; set; }
 
+  public double X { get; set; }
+  public double Y { get; set; }
   // equipment
 
 
@@ -19,9 +20,10 @@ public class CharacterSimpleDto {
       Id = character.Id,
       QuadrantIndex = character.QuadrantIndex,
       Nickname = character.Nickname.Value,
-      Level = character.Level,
       CharacterClass = character.CharacterClass,
       CharacterStatus = character.CharacterStatus,
+      X = character.Position.LocationX,
+      Y = character.Position.LocationY
     };
 
 }

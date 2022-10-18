@@ -81,15 +81,15 @@ public class Position {
 
   }
 
-  public void Move(double distance) {
+  public void Move(double distancePerTick) {
 
     var firstCathetus = (LocationX - DestinationX);
     var secondCathetus = (LocationY - DestinationY);
     var lengthSquared = firstCathetus * firstCathetus + secondCathetus * secondCathetus;
-    if (lengthSquared >= distance * distance)
+    if (lengthSquared >= distancePerTick * distancePerTick)
     {
-      LocationX -= normalizedHeadingX * distance;
-      LocationY -= normalizedHeadingY * distance;
+      LocationX -= normalizedHeadingX * distancePerTick;
+      LocationY -= normalizedHeadingY * distancePerTick;
     }
     else if (normalizedHeadingX != 0 || normalizedHeadingY != 0)
     {

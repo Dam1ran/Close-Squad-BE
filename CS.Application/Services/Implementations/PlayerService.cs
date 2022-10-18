@@ -143,5 +143,5 @@ public class PlayerService : IPlayerService {
   public ICollection<Player> GetPlayers() => Players.Values;
 
   public Nickname GetPlayerNickname(long playerId) => Players.Values.Where(p => p.Id == playerId).Single().Nickname;
-  
+
 }

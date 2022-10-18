@@ -1,0 +1,65 @@
+[
+  {
+    "CharacterClass": "Assassin",
+    "BaseHpPercentPerLevel": 0.04,
+    "BaseMpPercentPerLevel": 0.04,
+    "BasePhysicalAttack": 0.01,
+    "BasePhysicalDefense": 0.01
+  },
+  {
+    "CharacterClass": "Berserk",
+    "BaseHpPercentPerLevel": 0.04,
+    "BaseMpPercentPerLevel": 0.04,
+    "BasePhysicalAttack": 0.01,
+    "BasePhysicalDefense": 0.01
+  },
+  {
+    "CharacterClass": "Cupid",
+    "BaseHpPercentPerLevel": 0.04,
+    "BaseMpPercentPerLevel": 0.04,
+    "BasePhysicalAttack": 0.01,
+    "BasePhysicalDefense": 0.01
+  },
+  {
+    "CharacterClass": "Doctor",
+    "BaseHpPercentPerLevel": 0.04,
+    "BaseMpPercentPerLevel": 0.04,
+    "BasePhysicalAttack": 0.01,
+    "BasePhysicalDefense": 0.01
+  },
+  {
+    "CharacterClass": "Handyman",
+    "BaseHpPercentPerLevel": 0.04,
+    "BaseMpPercentPerLevel": 0.04,
+    "BasePhysicalAttack": 0.01,
+    "BasePhysicalDefense": 0.01
+  },
+  {
+    "CharacterClass": "Medium",
+    "BaseHpPercentPerLevel": 0.04,
+    "BaseMpPercentPerLevel": 0.04,
+    "BasePhysicalAttack": 0.01,
+    "BasePhysicalDefense": 0.01
+  },
+  {
+    "CharacterClass": "Occultist",
+    "BaseHpPercentPerLevel": 0.04,
+    "BaseMpPercentPerLevel": 0.04,
+    "BasePhysicalAttack": 0.01,
+    "BasePhysicalDefense": 0.01
+  },
+  {
+    "CharacterClass": "Seer",
+    "BaseHpPercentPerLevel": 0.04,
+    "BaseMpPercentPerLevel": 0.04,
+    "BasePhysicalAttack": 0.01,
+    "BasePhysicalDefense": 0.01
+  },
+  {
+    "CharacterClass": "Templar",
+    "BaseHpPercentPerLevel": 0.04,
+    "BaseMpPercentPerLevel": 0.04,
+    "BasePhysicalAttack": 0.01,
+    "BasePhysicalDefense": 0.01
+  }
+]

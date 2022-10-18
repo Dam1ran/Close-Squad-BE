@@ -18,8 +18,11 @@ public class Stat {
   private double _maxModifierPercent;
   private double _maxModifierAmount;
   private double _maxCalculated;
-  public double Max { get => _maxCalculated; }
-  public double Current { get; private set; }
+
+  [NotMapped]
+  public double Cap { get; set; }
+  public double Max { get => Math.Min(_maxCalculated, Cap); }
+  public double Current { get; private set; } = -1;
 
   [NotMapped]
   public double RegenerationAmountPerTick { get; set; }
@@ -56,6 +59,6 @@ public class Stat {
 
   }
 
-  public void RegenerationTick() => AddCurrentAmount(RegenerationAmountPerTick);
+  public void Tick() => AddCurrentAmount(RegenerationAmountPerTick);
 
 }

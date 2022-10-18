@@ -19,3 +19,7 @@ public class CharacterMoveCall: CharacterCall {
 
   public bool IsPercent() => X >= 0 && X <= 100 && Y >= 0 && Y <= 100;
 }
+
+public class CharacterUseActionCall: CharacterCall {
+  public CharacterAction Action { get; set; }
+}

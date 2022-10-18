@@ -8,6 +8,7 @@ public interface ICharacterService {
   void Init();
   Task Create(Player player, Nickname characterNickname, CharacterClass characterClass, byte gender, CancellationToken cancellationToken = default);
   Task<IEnumerable<Character>> GetCharactersOf(Player player, CancellationToken cancellationToken = default);
+  Task <IEnumerable<BarShortcut>> GetAllCharacterBarShortcutsOfAsync(Player player);
   IEnumerable<Character> GetAll();
   Character? GetCharacterOf(Player player, long id);
   IEnumerable<Character> GetCharactersInQuadrant(uint quadrantIndex);
