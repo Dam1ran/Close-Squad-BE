@@ -6,13 +6,13 @@ namespace CS.Application.Services.Abstractions;
 public interface ICharacterService {
 
   void Init();
-  Task Create(Player player, Nickname characterNickname, CharacterClass characterClass, byte gender, CancellationToken cancellationToken = default);
+  Task Create(Player player, Nickname characterNickname, CsEntityClass characterClass, byte gender, CancellationToken cancellationToken = default);
   Task<IEnumerable<Character>> GetCharactersOf(Player player, CancellationToken cancellationToken = default);
   Task <IEnumerable<BarShortcut>> GetAllCharacterBarShortcutsOfAsync(Player player);
   IEnumerable<Character> GetAll();
-  Character? GetCharacterOf(Player player, long id);
+  Character? FindCharacterOf(Player player, long id);
+  Character? FindCharacterByCsInstanceId(string csInstanceId);
   IEnumerable<Character> GetCharactersInQuadrant(uint quadrantIndex);
-  void Toggle(Player player, Character character);
   Task PersistAndClearPlayerCharacters(Player player);
   Task PersistPlayerCharacters(Player player);
   Task Persist(Character character);

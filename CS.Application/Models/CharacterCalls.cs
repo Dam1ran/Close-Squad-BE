@@ -23,3 +23,7 @@ public class CharacterMoveCall: CharacterCall {
 public class CharacterUseActionCall: CharacterCall {
   public CharacterAction Action { get; set; }
 }
+
+public class CharacterTargetCall: CharacterCall {
+  public string InstanceId { get; set; } = string.Empty;
+}

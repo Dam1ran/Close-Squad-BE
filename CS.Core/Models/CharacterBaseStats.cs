@@ -3,7 +3,7 @@ using CS.Core.Enums;
 namespace CS.Core.Models;
 public class CharacterBaseStats {
 
-  public CharacterClass CharacterClass { get; set; }
+  public CsEntityClass CharacterClass { get; set; }
   public double Hp { get; set; }
   public double HpRegeneration { get; set; }
   public double Mp { get; set; }
@@ -12,6 +12,7 @@ public class CharacterBaseStats {
   public double PhysicalAttack { get; set; }
   public double PhysicalAttackSpeed { get; set; }
   public double PhysicalDefense { get; set; }
+  public double AttackRange { get; set; }
 
   public double Speed { get; set; }
 

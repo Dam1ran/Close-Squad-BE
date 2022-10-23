@@ -7,7 +7,7 @@ public interface IWorldMapService {
   void Init();
   Tuple<ushort, ushort> GetNrOfColsAndRows();
   IEnumerable<uint> GetQuadrantsIndexesAround(uint quadrantIndex, ushort radius = 1);
-  uint GetStartingQuadrantIndex(CharacterClass characterClass);
+  uint GetStartingQuadrantIndex(CsEntityClass characterClass);
   uint GetArrivingQuadrantIndex(uint quadrantIndex, TravelDirection travelDirection);
   Quadrant GetQuadrantByIndex(uint quadrantIndex);
   Quadrant? GetQuadrantByIndexIfExists(uint quadrantIndex);

@@ -1,6 +1,22 @@
 
 ----------------
 
+/// push XXII
+
+hub sender
+moved toggle to ai, solved bug with player leaving quadrant
+some interfaces segregation
+dmg incurred/received
+movement ai
+attacking ai
+following ai
+split character class into partials
+some additional handlers
+handlers cleanups
+some bugs
+targeting infra part I
+shortcuts part II
+
 /// push XXI
 
 persist on zero hp

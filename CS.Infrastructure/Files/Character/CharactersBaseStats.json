@@ -8,6 +8,7 @@
     "PhysicalAttack": 24.0,
     "PhysicalAttackSpeed": 250.0,
     "PhysicalDefense": 14.0,
+    "AttackRange": 1.0,
     "Speed": 0.23
   },
   {
@@ -19,6 +20,7 @@
     "PhysicalAttack": 20.0,
     "PhysicalAttackSpeed": 250.0,
     "PhysicalDefense": 4.0,
+    "AttackRange": 1.2,
     "Speed": 0.2
   },
   {
@@ -30,6 +32,7 @@
     "PhysicalAttack": 24.0,
     "PhysicalAttackSpeed": 250.0,
     "PhysicalDefense": 4.0,
+    "AttackRange": 0.9,
     "Speed": 0.22
   },
   {
@@ -41,6 +44,7 @@
     "PhysicalAttack": 6.0,
     "PhysicalAttackSpeed": 250.0,
     "PhysicalDefense": 4.0,
+    "AttackRange": 0.8,
     "Speed": 0.18
   },
   {
@@ -49,9 +53,10 @@
     "HpRegeneration": 0.08,
     "Mp": 40,
     "MpRegeneration": 0.03,
-    "PhysicalAttack": 6.0,
+    "PhysicalAttack": 26.0,
     "PhysicalAttackSpeed": 250.0,
     "PhysicalDefense": 4.0,
+    "AttackRange": 1.1,
     "Speed": 0.16
   },
   {
@@ -63,6 +68,7 @@
     "PhysicalAttack": 6.0,
     "PhysicalAttackSpeed": 250.0,
     "PhysicalDefense": 4.0,
+    "AttackRange": 0.8,
     "Speed": 0.18
   },
   {
@@ -74,6 +80,7 @@
     "PhysicalAttack": 6.0,
     "PhysicalAttackSpeed": 250.0,
     "PhysicalDefense": 4.0,
+    "AttackRange": 0.8,
     "Speed": 0.2
   },
   {
@@ -85,6 +92,7 @@
     "PhysicalAttack": 6.0,
     "PhysicalAttackSpeed": 250.0,
     "PhysicalDefense": 4.0,
+    "AttackRange": 0.8,
     "Speed": 0.18
   },
   {
@@ -96,6 +104,7 @@
     "PhysicalAttack": 4.0,
     "PhysicalAttackSpeed": 250.0,
     "PhysicalDefense": 12.0,
+    "AttackRange": 1.0,
     "Speed": 0.185
   }
 ]

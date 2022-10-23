@@ -12,8 +12,8 @@ public class CharacterCreationDto {
   public string Nickname { get; set; } = string.Empty;
 
   [Required]
-  [Enum(typeof(CharacterClass))]
-  public CharacterClass CharacterClass { get; set; }
+  [Enum(typeof(CsEntityClass))]
+  public CsEntityClass CharacterClass { get; set; }
 
   [Required]
   [Range(0, 100)]

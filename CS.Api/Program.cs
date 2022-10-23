@@ -134,6 +134,7 @@ builder.Services.AddSingleton<IPlayerService, PlayerService>();
 builder.Services.AddSingleton<ICharacterService, CharacterService>();
 builder.Services.AddSingleton<ICharacterEngine, CharacterEngine>();
 builder.Services.AddSingleton<IHubService, HubService>();
+builder.Services.AddSingleton<IHubSender, HubSender>();
 builder.Services.AddSingleton<IWorldMapService, WorldMapService>();
 
 builder.Services.AddSingleton<ITickService, TickService>();

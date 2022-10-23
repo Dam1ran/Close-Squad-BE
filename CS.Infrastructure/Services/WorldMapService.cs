@@ -109,7 +109,7 @@ public class WorldMapService : IWorldMapService {
 
   }
 
-  public uint GetStartingQuadrantIndex(CharacterClass characterClass) {
+  public uint GetStartingQuadrantIndex(CsEntityClass characterClass) {
     if (_worldMapSettings is null) {
       throw new ArgumentNullException(nameof(WorldMapSettings));
     }

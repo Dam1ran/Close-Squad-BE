@@ -8,8 +8,8 @@ public class CharacterStatsHelper {
 
   public void RecalculateStats(object? sender, EventArgs? e = null) {
     if (sender is Character character) {
-      var baseStats = CharactersBaseStats.Single(c => c.CharacterClass == character.CharacterClass);
-      var levelClassStatsModifier = LevelClassesStatsModifiers.Single(c => c.CharacterClass == character.CharacterClass);
+      var baseStats = CharactersBaseStats.Single(c => c.CharacterClass == character.Class);
+      var levelClassStatsModifier = LevelClassesStatsModifiers.Single(c => c.CharacterClass == character.Class);
 
       // dependent on level
       character.Stats.Hp.Base
@@ -35,6 +35,9 @@ public class CharacterStatsHelper {
 
       character.Stats.PhysicalAttackSpeed.Cap = 1000; // ????
       character.Stats.PhysicalAttackSpeed.Base = baseStats.PhysicalAttackSpeed;
+
+      character.Stats.AttackRange.Cap = 30.0; // ????
+      character.Stats.AttackRange.Base = baseStats.AttackRange;
 
       character.Stats.Speed.Cap = 1.0;
       character.Stats.Speed.Base = baseStats.Speed;

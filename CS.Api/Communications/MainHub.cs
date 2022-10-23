@@ -153,6 +153,9 @@ public partial class MainHub : Hub<ITypedHubClient> {
       currentPlayer = _playerService.ClearLogoutTimeAndSetId(currentPlayer, Context.ConnectionId);
       await _hubService.SetCurrentPlayer(currentPlayer);
       await SendPlayerCharacters(currentPlayer);
+
+      var characterBarShortcuts = await _characterService.GetAllCharacterBarShortcutsOfAsync(currentPlayer);
+      await Clients.Caller.SetBarShortcuts(characterBarShortcuts);
     }
 
     await base.OnConnectedAsync();
@@ -181,7 +184,7 @@ public partial class MainHub : Hub<ITypedHubClient> {
       return;
     }
 
-    var character = _characterService.GetCharacterOf(currentPlayer, characterCall.CharacterId);
+    var character = _characterService.FindCharacterOf(currentPlayer, characterCall.CharacterId);
     if (character is null) {
       return;
     }
@@ -216,18 +219,23 @@ public partial class MainHub : Hub<ITypedHubClient> {
       return;
     }
 
-    var character = _characterService.GetCharacterOf(currentPlayer, characterCall.CharacterId);
+    var character = _characterService.FindCharacterOf(currentPlayer, characterCall.CharacterId);
     if (character is null) {
       return;
     }
 
-    _characterService.Toggle(currentPlayer, character);
+    character.Toggle();
 
-    if (currentPlayer?.QuadrantIndex == character.QuadrantIndex) {
+    var anyOwnPresentCharactersInSameQuadrant = (await _characterService
+      .GetCharactersOf(currentPlayer))
+      .Any(c => c.QuadrantIndex == character.QuadrantIndex &&
+          c.Status != CsEntityStatus.Astray && c.Status != CsEntityStatus.Traveling);
+
+    if (currentPlayer?.QuadrantIndex == character.QuadrantIndex && !anyOwnPresentCharactersInSameQuadrant) {
       await PlayerLeaveQuadrant();
     }
 
-    await Clients.Caller.UpdateCharacter(new { Id = character.Id, CharacterStatus = character.CharacterStatus });
+    await Clients.Caller.UpdateCharacter(new { Id = character.Id, CharacterStatus = character.Status });
 
   }
 
@@ -241,17 +249,15 @@ public partial class MainHub : Hub<ITypedHubClient> {
       return;
     }
 
-    var character = _characterService.GetCharacterOf(currentPlayer, characterTravelCall.CharacterId);
+    var character = _characterService.FindCharacterOf(currentPlayer, characterTravelCall.CharacterId);
     if (character is null || !character.CanTravel()) {
       return;
     }
 
     // TODO: check for quadrant requirements...
+    character.SetTraveling();
 
-    character.CharacterStatus = CharacterStatus.Traveling;
-    character.Position.Stop();
-
-    _ = Clients.Caller.UpdateCharacter(new { Id = character.Id, CharacterStatus = character.CharacterStatus });
+    _ = Clients.Caller.UpdateCharacter(new { Id = character.Id, CharacterStatus = character.Status });
 
     var secondsToTravel = _characterEngine.TravelTo(characterTravelCall.TravelDirection, character, currentPlayer);
 
@@ -268,13 +274,15 @@ public partial class MainHub : Hub<ITypedHubClient> {
       return;
     }
 
-    var character = _characterService.GetCharacterOf(currentPlayer, characterMove.CharacterId);
-    if (character is null || !character.CanMove()) {
+    var character = _characterService.FindCharacterOf(currentPlayer, characterMove.CharacterId);
+    if (character is null || !character.IsAlive()) {
       return;
     }
 
-    character.Position.SetDestination(characterMove.X, characterMove.Y);
-
+    character.MoveTo(characterMove.X, characterMove.Y);
+    // TEST
+    // character.AddXpPercent(45);
+    // character.DoAttack(character);
   }
 
   public async Task ScoutQuadrant(CharacterScoutCall characterScoutCall) {
@@ -283,7 +291,7 @@ public partial class MainHub : Hub<ITypedHubClient> {
       return;
     }
 
-    var character = _characterService.GetCharacterOf(currentPlayer, characterScoutCall.CharacterId);
+    var character = _characterService.FindCharacterOf(currentPlayer, characterScoutCall.CharacterId);
     if (character is null /* || no consumable */) {
       return;
     }
@@ -301,7 +309,7 @@ public partial class MainHub : Hub<ITypedHubClient> {
       Name = quadrant.Name,
       Characters = _characterService
         .GetCharactersInQuadrant(quadrant.Index)
-        .Where(c => c.CharacterClass != CharacterClass.Assassin)
+        .Where(c => c.Class != CsEntityClass.Assassin) // TODO later dependent on assassin skill
         .Select(CharacterSimpleDto.FromCharacter)
       // others
     };
@@ -316,20 +324,127 @@ public partial class MainHub : Hub<ITypedHubClient> {
       return;
     }
 
-    var character = _characterService.GetCharacterOf(currentPlayer, characterCall.CharacterId);
+    var character = _characterService.FindCharacterOf(currentPlayer, characterCall.CharacterId);
     if (character is null) {
       return;
     }
 
-    // TODO
-
+    // TODO where to? position?hideout? quadrant? nearest town?
+    character.XpLost = 0;
     character.UpdateStats((characterStats) => {
       characterStats.Hp.SetCurrentByPercent(50);
       characterStats.Mp.SetCurrentByPercent(25);
       return characterStats;
     });
-    character.CharacterStatus = CharacterStatus.Awake;
+    character.Status = CsEntityStatus.Awake;
 
+    await _characterService.Persist(character);
+
+  }
+
+  public async Task UseAction(CharacterUseActionCall characterUseActionCall) {
+    if (!Enum.IsDefined(typeof(CharacterAction), characterUseActionCall.Action)) {
+      return;
+    }
+    var currentPlayer = await GetCurrentPlayer();
+    if (currentPlayer is null) {
+      return;
+    }
+
+    var character = _characterService.FindCharacterOf(currentPlayer, characterUseActionCall.CharacterId);
+    if (character is null) {
+      return;
+    }
+
+    switch (characterUseActionCall.Action) {
+      case CharacterAction.PickUp: {
+        // NOT DONE
+        break;
+      }
+      case CharacterAction.Attack: {
+        if (character.Target is null) {
+          break;
+        }
+        character.AttackTarget();
+        break;
+      }
+      case CharacterAction.Sit: {
+        if (character.Status != CsEntityStatus.Awake && character.Status != CsEntityStatus.Sitting) {
+          break;
+        }
+
+        if (character.Status == CsEntityStatus.Awake) {
+          character.Position.Stop();
+          // TODO enhance regeneration
+          character.Status = CsEntityStatus.Sitting;
+        } else {
+          character.Status = CsEntityStatus.Awake;
+        }
+
+        break;
+      }
+      case CharacterAction.Follow: {
+        if (!character.CanApproachTarget()) {
+          break;
+        }
+
+        character.FollowTarget();
+
+        break;
+      }
+      default: return;
+    }
+
+  }
+
+  public async Task TargetSelf(CharacterCall characterCall) {
+    var currentPlayer = await GetCurrentPlayer();
+    if (currentPlayer is null) {
+      return;
+    }
+
+    var character = _characterService.FindCharacterOf(currentPlayer, characterCall.CharacterId);
+    if (character is null) {
+      return;
+    }
+
+    character.TargetSelf();
+  }
+
+  public async Task TargetByInstanceId(CharacterTargetCall characterTargetCall) {
+    var currentPlayer = await GetCurrentPlayer();
+    if (currentPlayer is null) {
+      return;
+    }
+
+    var character = _characterService.FindCharacterOf(currentPlayer, characterTargetCall.CharacterId);
+    if (character is null) {
+      return;
+    }
+
+    var targetCharacter = _characterService.FindCharacterByCsInstanceId(characterTargetCall.InstanceId);
+    if (targetCharacter is null) {
+      return;
+    }
+
+    // TODO search creature/actor instance
+
+    character.Target = targetCharacter;
+  }
+
+  public async Task CancelTarget(CharacterCall characterCall) {
+    var currentPlayer = await GetCurrentPlayer();
+    if (currentPlayer is null) {
+      return;
+    }
+
+    var character = _characterService.FindCharacterOf(currentPlayer, characterCall.CharacterId);
+    if (character is null) {
+      return;
+    }
+
+    // TODO Check if this action is allowed
+    character.CancelTarget();
   }
 
 }

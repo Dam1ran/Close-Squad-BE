@@ -1,5 +1,5 @@
 namespace CS.Core.Enums;
-public enum CharacterClass {
+public enum CsEntityClass {
   Assassin = 1,
   Berserk = 2,
   Cupid = 3,

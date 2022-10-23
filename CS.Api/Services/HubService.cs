@@ -60,7 +60,8 @@ public class HubService : IHubService {
   private void AggregateAndSendData(object? sender, EventArgs e) {
 
     var players = _playerService.GetPlayers();
-    foreach (var group in _characterService.GetAll().GroupBy(c => c.PlayerId)) {
+    var groups = _characterService.GetAll().GroupBy(c => c.PlayerId);
+    foreach (var group in groups) {
       var player = players.SingleOrDefault(p => p.Id == group.Key);
       if (player is null) {
         continue;
@@ -76,7 +77,7 @@ public class HubService : IHubService {
           .Where(
             c => c.QuadrantIndex == player.QuadrantIndex &&
             c.PlayerId != player.Id &&
-            c.CharacterStatus != CharacterStatus.Astray)
+            c.Status != CsEntityStatus.Astray)
           .Select(CharacterSimpleDto.FromCharacter);
       }
 

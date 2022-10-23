@@ -4,6 +4,7 @@ using CS.Application.Persistence.Abstractions.Repositories;
 using CS.Application.Services.Abstractions;
 using CS.Application.Support.Utils;
 using CS.Core.Entities;
+using CS.Core.Entities.Abstractions;
 using CS.Core.Enums;
 using CS.Core.Exceptions;
 using CS.Core.Models;
@@ -19,9 +20,10 @@ public class CharacterService : ICharacterService {
   private readonly IWorldMapService _worldMapService;
   private readonly IPlayerService _playerService;
   private readonly ITickService _tickService;
+  private readonly IHubSender _hubSender;
   private readonly List<Tuple<long, Character>> Characters = new();
 
-  public static readonly int MaxNumberOfCharacters = Enum.GetNames(typeof(CharacterClass)).Length;
+  public static readonly int MaxNumberOfCharacters = Enum.GetNames(typeof(CsEntityClass)).Length;
   private const int CharacterBufferClearIntervalSeconds = 60;
 
   private readonly object listLock = new object();
@@ -31,10 +33,12 @@ public class CharacterService : ICharacterService {
     IServiceProvider serviceProvider,
     IWorldMapService worldMapService,
     IPlayerService playerService,
+    IHubSender hubSender,
     ITickService tickService) {
     _serviceProvider = Check.NotNull(serviceProvider, nameof(serviceProvider));
     _worldMapService = Check.NotNull(worldMapService, nameof(worldMapService));
     _playerService = Check.NotNull(playerService, nameof(playerService));
+    _hubSender = Check.NotNull(hubSender, nameof(hubSender));
     _tickService = Check.NotNull(tickService, nameof(tickService));
 
     _tickService.on_60s_tick += ClearLoggedOutPlayersAndCharacters;
@@ -70,7 +74,7 @@ public class CharacterService : ICharacterService {
 
   }
 
-    public async Task Create(Player player, Nickname characterNickname, CharacterClass characterClass, byte gender, CancellationToken cancellationToken = default) {
+    public async Task Create(Player player, Nickname characterNickname, CsEntityClass characterClass, byte gender, CancellationToken cancellationToken = default) {
 
     using var scope = _serviceProvider.CreateScope();
     var _context = scope.ServiceProvider.GetRequiredService<IContext>();
@@ -105,11 +109,41 @@ public class CharacterService : ICharacterService {
           if (Characters.SingleOrDefault(cl => cl.Item2.Id == character.Id) is null) {
             characterStatsHelper.ConnectHandlersAndInit(character);
             characterStatsHelper.RecalculateStats(character);
+
             character.on_zero_hp += (sender, args) => {
               if (sender is Character characterToPersist) {
                 _ = Task.Run(() => Persist(characterToPersist)).ConfigureAwait(false);
               }
             };
+
+            character.on_damage_incurred += (sender, args) => {
+              if (sender is null || args is null) {
+                return;
+              }
+
+              _hubSender.EnqueueSystemMessage(
+                player.Nickname,
+                $"{((ICsEntity)sender).Nickname} incurred {(int)Math.Abs(args.Damage)} damage to {args.CsEntity.Nickname}.");
+            };
+
+            character.on_damage_received += (sender, args) => {
+              if (sender is null || args is null) {
+                return;
+              }
+
+              if (sender is Character characterReceiver) {
+                var playerReceiverNickname = _playerService.GetPlayerNickname(characterReceiver.PlayerId);
+                if (string.IsNullOrWhiteSpace(playerReceiverNickname.Value)) {
+                  return;
+                }
+
+                _hubSender.EnqueueSystemMessage(
+                  playerReceiverNickname,
+                  $"{characterReceiver.Nickname} received {(int)Math.Abs(args.Damage)} damage from {args.CsEntity.Nickname}.");
+              }
+
+            };
+
             Characters.Add(new (player.Id, character));
           }
         }
@@ -127,23 +161,8 @@ public class CharacterService : ICharacterService {
   public IEnumerable<Character> GetCharactersInQuadrant(uint quadrantIndex) =>
     Characters.Where(cl => cl.Item2.QuadrantIndex == quadrantIndex).Select(cl => cl.Item2);
 
-  public Character? GetCharacterOf(Player player, long id) =>
+  public Character? FindCharacterOf(Player player, long id) =>
     Characters.SingleOrDefault(cl => cl.Item1 == player.Id && cl.Item2.Id == id)?.Item2;
-
-  public void Toggle(Player player, Character character) {
-
-    if (character.CharacterStatus == CharacterStatus.Engaged) {
-      return;
-    }
-
-    character.CharacterStatus
-      = character.CharacterStatus != CharacterStatus.Astray
-      ? CharacterStatus.Astray
-      : character.Stats.HasHp()
-      ? CharacterStatus.Awake
-      : CharacterStatus.Dead;
-
-  }
 
   public async Task Persist(Character character) {
     using var scope = _serviceProvider.CreateScope();
@@ -169,6 +188,10 @@ public class CharacterService : ICharacterService {
 
     await PersistPlayerCharacters(player);
 
+    foreach(var csEntity in await GetCharactersOf(player)) {
+      csEntity.ClearAllEventHandlers();
+    }
+
     Characters.RemoveAll(cl => cl.Item1 == player.Id);
     _playerService.ClearPlayer(player);
 
@@ -191,4 +214,6 @@ public class CharacterService : ICharacterService {
   public async Task<IEnumerable<BarShortcut>> GetAllCharacterBarShortcutsOfAsync(Player player) =>
     (await GetCharactersOf(player)).SelectMany(c => c.BarShortcuts);
 
+  public Character? FindCharacterByCsInstanceId(string csInstanceId) =>
+    Characters.SingleOrDefault(cl => cl.Item2.CsInstanceId == csInstanceId)?.Item2;
 }

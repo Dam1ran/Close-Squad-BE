@@ -1,5 +1,4 @@
 using System.Collections.Concurrent;
-using System.Diagnostics;
 using CS.Api.Communications;
 using CS.Application.Models;
 using CS.Application.Services.Abstractions;
@@ -67,7 +66,7 @@ public class CharacterEngine : ICharacterEngine {
       if (character.CanArrive()) {
 
         character.QuadrantIndex = arrivingQuadrantIndex;
-        character.CharacterStatus = CharacterStatus.Awake;
+        character.Status = CsEntityStatus.Awake;
         character.Position.SetLocationAndDestination(travelDirection);
 
         await _characterService.Persist(character);
@@ -77,7 +76,7 @@ public class CharacterEngine : ICharacterEngine {
           .UpdateCharacter(new
           {
             Id = character.Id,
-            CharacterStatus = character.CharacterStatus,
+            CharacterStatus = character.Stats,
             QuadrantIndex = character.QuadrantIndex,
             X = character.Position.LocationX,
             Y = character.Position.LocationY,

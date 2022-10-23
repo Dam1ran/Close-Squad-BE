@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations.Schema;
 using CS.Core.Enums;
 
 namespace CS.Core.Entities;
@@ -16,13 +17,18 @@ public class Position {
   private double normalizedHeadingX;
   private double normalizedHeadingY;
 
-  public void SetDestination(float x, float y) {
+  [NotMapped]
+  public bool IsAtDestination { get; set; }
+
+  public void SetDestination(double x, double y) {
+    IsAtDestination = false;
+
     DestinationX = x;
     DestinationY = y;
 
     var headingX = LocationX - DestinationX;
     var headingY = LocationY - DestinationY;
-    var headingLength = (float)Math.Sqrt(headingX * headingX + headingY * headingY);
+    var headingLength = Math.Sqrt(headingX * headingX + headingY * headingY);
     if (headingLength == 0.0F) {
       normalizedHeadingX = 0;
       normalizedHeadingY = 0;
@@ -81,7 +87,7 @@ public class Position {
 
   }
 
-  public void Move(double distancePerTick) {
+  public void MoveTick(double distancePerTick) {
 
     var firstCathetus = (LocationX - DestinationX);
     var secondCathetus = (LocationY - DestinationY);
@@ -90,6 +96,7 @@ public class Position {
     {
       LocationX -= normalizedHeadingX * distancePerTick;
       LocationY -= normalizedHeadingY * distancePerTick;
+      IsAtDestination = false;
     }
     else if (normalizedHeadingX != 0 || normalizedHeadingY != 0)
     {
@@ -97,6 +104,7 @@ public class Position {
       normalizedHeadingY = 0;
       LocationX = DestinationX;
       LocationY = DestinationY;
+      IsAtDestination = true;
     }
   }
 
@@ -106,5 +114,32 @@ public class Position {
     DestinationX = LocationX;
     DestinationY = LocationY;
   }
+
+  public double GetDistance(Position position) =>
+    Math.Sqrt(Math.Pow(LocationX - position.LocationX, 2) + Math.Pow(LocationY - position.LocationY, 2));
+
+  public Position GetDifference(Position position) =>
+    new() {
+      LocationX = position.LocationX - LocationX,
+      LocationY = position.LocationY - LocationY,
+    };
+
+  public Position SetLength(double newLength) {
+    var length = Math.Sqrt(LocationX * LocationX + LocationY * LocationY);
+    var normalizedX = LocationX * (newLength / length);
+    var normalizedY = LocationY * (newLength / length);
+
+    return
+      new() {
+        LocationX = normalizedX,
+        LocationY = normalizedY,
+      };
+  }
+
+  public void CopyLocationFrom(Position position) {
+    LocationX = position.LocationX;
+    LocationY = position.LocationY;
+  }
+
 
 }

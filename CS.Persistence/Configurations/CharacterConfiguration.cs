@@ -29,7 +29,11 @@ public class CharacterConfiguration : EntityConfiguration<Character> {
     .IsRequired();
 
 
-    builder.Ignore(c => c.CharacterStatus);
+    builder.Ignore(c => c.CsInstanceId);
+    builder.Ignore(c => c.CurrentAction);
+    builder.Ignore(c => c.Status);
+    builder.Ignore(c => c.Target);
+    builder.Ignore(m => m.EngagedTill);
 
 
     builder.OwnsOne(player => player.Position, position => {
@@ -43,6 +47,7 @@ public class CharacterConfiguration : EntityConfiguration<Character> {
         .HasColumnName("LocationY")
         .HasDefaultValue(Position.originY);
 
+      position.Ignore(p => p.IsAtDestination);
     })
     .Navigation(c => c.Position)
     .IsRequired();
@@ -74,6 +79,7 @@ public class CharacterConfiguration : EntityConfiguration<Character> {
       stats.Ignore(m => m.PhysicalAttack);
       stats.Ignore(m => m.PhysicalAttackSpeed);
       stats.Ignore(m => m.PhysicalDefense);
+      stats.Ignore(m => m.AttackRange);
       stats.Ignore(m => m.Speed);
 
     });

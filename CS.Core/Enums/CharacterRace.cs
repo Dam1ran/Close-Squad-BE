@@ -11,14 +11,14 @@ public enum CharacterRace {
 
 public static class CharacterRaceHelper {
 
-  public static CharacterRace GetRace(this CharacterClass characterClass) {
+  public static CharacterRace GetRace(this CsEntityClass characterClass) {
     return characterClass switch
     {
-      CharacterClass.Cupid or CharacterClass.Doctor => CharacterRace.Divine,
-      CharacterClass.Medium or CharacterClass.Templar => CharacterRace.Human,
-      CharacterClass.Handyman => CharacterRace.Dwarf,
-      CharacterClass.Berserk or CharacterClass.Seer => CharacterRace.Orc,
-      CharacterClass.Assassin or CharacterClass.Occultist => CharacterRace.NightElf,
+      CsEntityClass.Cupid or CsEntityClass.Doctor => CharacterRace.Divine,
+      CsEntityClass.Medium or CsEntityClass.Templar => CharacterRace.Human,
+      CsEntityClass.Handyman => CharacterRace.Dwarf,
+      CsEntityClass.Berserk or CsEntityClass.Seer => CharacterRace.Orc,
+      CsEntityClass.Assassin or CsEntityClass.Occultist => CharacterRace.NightElf,
       _ => throw new DomainValidationException($"Character race not mapped for {nameof(characterClass)} of {characterClass}.")
     };
   }
