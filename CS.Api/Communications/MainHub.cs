@@ -1,16 +1,15 @@
-using System.Diagnostics;
 using System.Text.RegularExpressions;
 using CS.Api.Communications.Models;
-using CS.Api.Support;
 using CS.Application.Enums;
 using CS.Application.Models;
 using CS.Application.Models.Dialog;
 using CS.Application.Services.Abstractions;
 using CS.Application.Support.Constants;
 using CS.Application.Support.Utils;
+using CS.Core.Entities;
+using CS.Core.Entities.Abstractions;
 using CS.Core.Enums;
 using CS.Core.Services.Interfaces;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 
 namespace CS.Api.Communications;
@@ -155,7 +154,7 @@ public partial class MainHub : Hub<ITypedHubClient> {
       await SendPlayerCharacters(currentPlayer);
 
       var characterBarShortcuts = await _characterService.GetAllCharacterBarShortcutsOfAsync(currentPlayer);
-      await Clients.Caller.SetBarShortcuts(characterBarShortcuts);
+      await Clients.Caller.SetBarShortcuts(characterBarShortcuts.Select(BarShortcutDto.FromBarShortcut));
     }
 
     await base.OnConnectedAsync();
@@ -177,15 +176,19 @@ public partial class MainHub : Hub<ITypedHubClient> {
     await base.OnDisconnectedAsync(exception);
   }
 
+  private async Task<(Player?, Character?)> GetPlayerAndCharacter(CharacterCall characterCall) {
+    var currentPlayer = await GetCurrentPlayer();
+    if (currentPlayer is not null) {
+      var character = _characterService.FindCharacterOf(currentPlayer, characterCall.CharacterId);
+      return (currentPlayer, character);
+    }
+    return (null, null);
+  }
 
   public async Task PlayerJumpTo(CharacterCall characterCall) {
-    var currentPlayer = await GetCurrentPlayer();
-    if (currentPlayer is null) {
-      return;
-    }
 
-    var character = _characterService.FindCharacterOf(currentPlayer, characterCall.CharacterId);
-    if (character is null) {
+    var (currentPlayer, character) = await GetPlayerAndCharacter(characterCall);
+    if (currentPlayer is null || character is null) {
       return;
     }
 
@@ -214,13 +217,8 @@ public partial class MainHub : Hub<ITypedHubClient> {
   }
 
   public async Task CharacterToggle(CharacterCall characterCall) {
-    var currentPlayer = await GetCurrentPlayer();
-    if (currentPlayer is null) {
-      return;
-    }
-
-    var character = _characterService.FindCharacterOf(currentPlayer, characterCall.CharacterId);
-    if (character is null) {
+    var (currentPlayer, character) = await GetPlayerAndCharacter(characterCall);
+    if (currentPlayer is null || character is null) {
       return;
     }
 
@@ -244,13 +242,8 @@ public partial class MainHub : Hub<ITypedHubClient> {
       return;
     }
 
-    var currentPlayer = await GetCurrentPlayer();
-    if (currentPlayer is null) {
-      return;
-    }
-
-    var character = _characterService.FindCharacterOf(currentPlayer, characterTravelCall.CharacterId);
-    if (character is null || !character.CanTravel()) {
+    var (currentPlayer, character) = await GetPlayerAndCharacter(characterTravelCall);
+    if (currentPlayer is null || character is null) {
       return;
     }
 
@@ -269,33 +262,21 @@ public partial class MainHub : Hub<ITypedHubClient> {
       return;
     }
 
-    var currentPlayer = await GetCurrentPlayer();
-    if (currentPlayer is null) {
-      return;
-    }
-
-    var character = _characterService.FindCharacterOf(currentPlayer, characterMove.CharacterId);
-    if (character is null || !character.IsAlive()) {
+    var (currentPlayer, character) = await GetPlayerAndCharacter(characterMove);
+    if (currentPlayer is null || character is null || !character.IsAlive()) {
       return;
     }
 
     character.MoveTo(characterMove.X, characterMove.Y);
-    // TEST
-    // character.AddXpPercent(45);
-    // character.DoAttack(character);
+
   }
 
   public async Task ScoutQuadrant(CharacterScoutCall characterScoutCall) {
-    var currentPlayer = await GetCurrentPlayer();
-    if (currentPlayer is null) {
+    var (currentPlayer, character) = await GetPlayerAndCharacter(characterScoutCall);
+    if (currentPlayer is null || character is null  /* || no consumable */) {
       return;
     }
-
-    var character = _characterService.FindCharacterOf(currentPlayer, characterScoutCall.CharacterId);
-    if (character is null /* || no consumable */) {
-      return;
-    }
-
+    
     // character.Inventory.Decrement(consumable)
 
     var quadrant = _worldMapService.GetQuadrantByIndexIfExists(characterScoutCall.QuadrantIndex);
@@ -319,13 +300,8 @@ public partial class MainHub : Hub<ITypedHubClient> {
   }
 
   public async Task CharacterTeleportToNearest(CharacterCall characterCall) {
-    var currentPlayer = await GetCurrentPlayer();
-    if (currentPlayer is null) {
-      return;
-    }
-
-    var character = _characterService.FindCharacterOf(currentPlayer, characterCall.CharacterId);
-    if (character is null) {
+    var (currentPlayer, character) = await GetPlayerAndCharacter(characterCall);
+    if (currentPlayer is null || character is null) {
       return;
     }
 
@@ -338,7 +314,7 @@ public partial class MainHub : Hub<ITypedHubClient> {
     });
     character.Status = CsEntityStatus.Awake;
 
-    await _characterService.Persist(character);
+    await _characterService.PersistAsync(character);
 
   }
 
@@ -346,13 +322,8 @@ public partial class MainHub : Hub<ITypedHubClient> {
     if (!Enum.IsDefined(typeof(CharacterAction), characterUseActionCall.Action)) {
       return;
     }
-    var currentPlayer = await GetCurrentPlayer();
-    if (currentPlayer is null) {
-      return;
-    }
-
-    var character = _characterService.FindCharacterOf(currentPlayer, characterUseActionCall.CharacterId);
-    if (character is null) {
+    var (currentPlayer, character) = await GetPlayerAndCharacter(characterUseActionCall);
+    if (currentPlayer is null || character is null) {
       return;
     }
 
@@ -398,13 +369,8 @@ public partial class MainHub : Hub<ITypedHubClient> {
   }
 
   public async Task TargetSelf(CharacterCall characterCall) {
-    var currentPlayer = await GetCurrentPlayer();
-    if (currentPlayer is null) {
-      return;
-    }
-
-    var character = _characterService.FindCharacterOf(currentPlayer, characterCall.CharacterId);
-    if (character is null) {
+    var (currentPlayer, character) = await GetPlayerAndCharacter(characterCall);
+    if (currentPlayer is null || character is null) {
       return;
     }
 
@@ -412,13 +378,8 @@ public partial class MainHub : Hub<ITypedHubClient> {
   }
 
   public async Task TargetByInstanceId(CharacterTargetCall characterTargetCall) {
-    var currentPlayer = await GetCurrentPlayer();
-    if (currentPlayer is null) {
-      return;
-    }
-
-    var character = _characterService.FindCharacterOf(currentPlayer, characterTargetCall.CharacterId);
-    if (character is null) {
+    var (currentPlayer, character) = await GetPlayerAndCharacter(characterTargetCall);
+    if (currentPlayer is null || character is null) {
       return;
     }
 
@@ -433,18 +394,72 @@ public partial class MainHub : Hub<ITypedHubClient> {
   }
 
   public async Task CancelTarget(CharacterCall characterCall) {
-    var currentPlayer = await GetCurrentPlayer();
-    if (currentPlayer is null) {
-      return;
-    }
-
-    var character = _characterService.FindCharacterOf(currentPlayer, characterCall.CharacterId);
-    if (character is null) {
+    var (currentPlayer, character) = await GetPlayerAndCharacter(characterCall);
+    if (currentPlayer is null || character is null) {
       return;
     }
 
     // TODO Check if this action is allowed
     character.CancelTarget();
+  }
+
+  public async Task AssignShortcut(CharacterAssignShortcutCall characterAssignShortcutCall) {
+    if (!Enum.IsDefined(typeof(BarShortcutType), characterAssignShortcutCall.BarShortcutType) ||
+      characterAssignShortcutCall.UsingId < 1 ||
+      characterAssignShortcutCall.ShortcutIndex < 0 ||
+      characterAssignShortcutCall.ShortcutIndex > 143) {
+      return;
+    }
+    var (currentPlayer, character) = await GetPlayerAndCharacter(characterAssignShortcutCall);
+    if (currentPlayer is null || character is null) {
+      return;
+    }
+
+    await _characterService
+      .AssignBarShortcutAsync(
+        character,
+        characterAssignShortcutCall.BarShortcutType,
+        characterAssignShortcutCall.UsingId,
+        characterAssignShortcutCall.ShortcutIndex);
+
+    await Clients.Caller.UpdateBarShortcuts(character.BarShortcuts.Select(BarShortcutDto.FromBarShortcut));
+
+  }
+
+  public async Task ClearShortcut(CharacterClearShortcutCall characterClearShortcutCall) {
+    if (characterClearShortcutCall.ShortcutIndex < 0 ||
+      characterClearShortcutCall.ShortcutIndex > 143) {
+      return;
+    }
+    var (currentPlayer, character) = await GetPlayerAndCharacter(characterClearShortcutCall);
+    if (currentPlayer is null || character is null) {
+      return;
+    }
+
+    await _characterService.RemoveBarShortcutAsync(character, characterClearShortcutCall.ShortcutIndex);
+
+    await Clients.Caller.RemoveBarShortcut(characterClearShortcutCall.ShortcutIndex);
+
+  }
+
+  public async Task UseSkill(CharacterUseSkillCall characterUseSkillCall) {
+    var (currentPlayer, character) = await GetPlayerAndCharacter(characterUseSkillCall);
+    if (currentPlayer is null || character is null) {
+      return;
+    }
+
+    var skillWrapper = character.SkillWrappers.SingleOrDefault(s => s.SkillKeyId == characterUseSkillCall.SkillKeyId);
+    if (skillWrapper is null || skillWrapper.Skill is null || !character.CanUseSkill(skillWrapper)) {
+      return;
+    }
+
+    // var isTargetInSkillRange = 
+
+
+    // var affectedTargets = _characterService.GetSkillAffectedTargets(character, skillWrapper);
+
+    character.UseSkill(skillWrapper, new List<ICsEntity>() { character.Target! });
+
   }
 
 }

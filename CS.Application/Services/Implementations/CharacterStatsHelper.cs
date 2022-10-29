@@ -1,10 +1,43 @@
+using System.Reflection;
 using CS.Core.Entities;
+using CS.Core.Exceptions;
 using CS.Core.Models;
+using Newtonsoft.Json;
 
 namespace CS.Application.Services.Implementations;
 public class CharacterStatsHelper {
   public List<CharacterBaseStats> CharactersBaseStats { get; set; } = new ();
   public List<LevelClassStatsModifiers> LevelClassesStatsModifiers { get; set; } = new ();
+
+    public void Init() {
+
+    var charactersBaseStatsPath = Path.Combine(Path.GetDirectoryName(
+      Assembly.GetExecutingAssembly().Location)!,
+      "Files/Character",
+      $"CharactersBaseStats.json");
+
+    using var charactersBaseStatsReader = new StreamReader(charactersBaseStatsPath);
+    CharactersBaseStats
+      = JsonConvert.DeserializeObject<List<CharacterBaseStats>>(charactersBaseStatsReader.ReadToEnd())
+      ?? throw new NotFoundException("CharactersBaseStats.json could not be loaded");
+
+    charactersBaseStatsReader.Close();
+    charactersBaseStatsReader.Dispose();
+
+    var levelClassesStatsModifiersPath = Path.Combine(Path.GetDirectoryName(
+      Assembly.GetExecutingAssembly().Location)!,
+      "Files/Character",
+      $"LevelClassStatsModifiers.json");
+
+    using var classesStatsModifiersReader = new StreamReader(levelClassesStatsModifiersPath);
+    LevelClassesStatsModifiers
+      = JsonConvert.DeserializeObject<List<LevelClassStatsModifiers>>(classesStatsModifiersReader.ReadToEnd())
+      ?? throw new NotFoundException("ClassStatsModifiers.json could not be loaded");
+
+    classesStatsModifiersReader.Close();
+    classesStatsModifiersReader.Dispose();
+
+  }
 
   public void RecalculateStats(object? sender, EventArgs? e = null) {
     if (sender is Character character) {
@@ -42,6 +75,8 @@ public class CharacterStatsHelper {
       character.Stats.Speed.Cap = 1.0;
       character.Stats.Speed.Base = baseStats.Speed;
 
+      character.Stats.CastingSpeed.Cap = 1000; // ????
+      character.Stats.CastingSpeed.Base = baseStats.CastingSpeed;
     }
   }
   public void ConnectHandlersAndInit(Character character) {

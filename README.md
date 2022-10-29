@@ -9,6 +9,7 @@
 VS Code
 .NET 6
 AspNetCode API
+Multithreading
 JWT
 EF Core
 Swagger

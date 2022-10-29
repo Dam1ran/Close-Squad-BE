@@ -9,6 +9,7 @@
     "PhysicalAttackSpeed": 250.0,
     "PhysicalDefense": 14.0,
     "AttackRange": 1.0,
+    "CastingSpeed": 200,
     "Speed": 0.23
   },
   {
@@ -21,6 +22,7 @@
     "PhysicalAttackSpeed": 250.0,
     "PhysicalDefense": 4.0,
     "AttackRange": 1.2,
+    "CastingSpeed": 170,
     "Speed": 0.2
   },
   {
@@ -32,7 +34,8 @@
     "PhysicalAttack": 24.0,
     "PhysicalAttackSpeed": 250.0,
     "PhysicalDefense": 4.0,
-    "AttackRange": 0.9,
+    "AttackRange": 10.0,
+    "CastingSpeed": 180,
     "Speed": 0.22
   },
   {
@@ -45,6 +48,7 @@
     "PhysicalAttackSpeed": 250.0,
     "PhysicalDefense": 4.0,
     "AttackRange": 0.8,
+    "CastingSpeed": 300,
     "Speed": 0.18
   },
   {
@@ -57,6 +61,7 @@
     "PhysicalAttackSpeed": 250.0,
     "PhysicalDefense": 4.0,
     "AttackRange": 1.1,
+    "CastingSpeed": 250,
     "Speed": 0.16
   },
   {
@@ -69,6 +74,7 @@
     "PhysicalAttackSpeed": 250.0,
     "PhysicalDefense": 4.0,
     "AttackRange": 0.8,
+    "CastingSpeed": 400,
     "Speed": 0.18
   },
   {
@@ -81,6 +87,7 @@
     "PhysicalAttackSpeed": 250.0,
     "PhysicalDefense": 4.0,
     "AttackRange": 0.8,
+    "CastingSpeed": 500,
     "Speed": 0.2
   },
   {
@@ -93,6 +100,7 @@
     "PhysicalAttackSpeed": 250.0,
     "PhysicalDefense": 4.0,
     "AttackRange": 0.8,
+    "CastingSpeed": 300,
     "Speed": 0.18
   },
   {
@@ -105,6 +113,7 @@
     "PhysicalAttackSpeed": 250.0,
     "PhysicalDefense": 12.0,
     "AttackRange": 1.0,
+    "CastingSpeed": 200,
     "Speed": 0.185
   }
 ]

@@ -1,4 +1,5 @@
 using CS.Core.Entities;
+using CS.Core.Entities.Abstractions;
 using CS.Core.Enums;
 using CS.Core.ValueObjects;
 
@@ -15,6 +16,8 @@ public interface ICharacterService {
   IEnumerable<Character> GetCharactersInQuadrant(uint quadrantIndex);
   Task PersistAndClearPlayerCharacters(Player player);
   Task PersistPlayerCharacters(Player player);
-  Task Persist(Character character);
-
+  Task PersistAsync(Character character);
+  Task AssignBarShortcutAsync(Character character, BarShortcutType barShortcutType, long usingId, int shortcutIndex);
+  Task RemoveBarShortcutAsync(Character character,int shortcutIndex);
+  IEnumerable<ICsEntity> GetSkillAffectedTargets(Character character, SkillWrapper skillWrapper);
 }

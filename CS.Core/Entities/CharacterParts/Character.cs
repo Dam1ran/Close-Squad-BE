@@ -28,6 +28,7 @@ public partial class Character : Entity, ICsEntity, ICsAiEntity {
   #endregion
 
   public void Init() {
+    Stats.Init();
     Stats.Hp.on_zero_current += OnZeroHp;
   }
   public void Tick() {
@@ -65,7 +66,7 @@ public partial class Character : Entity, ICsEntity, ICsAiEntity {
 
   }
 
-  public IEnumerable<BarShortcut> BarShortcuts { get; set; } = new List<BarShortcut>();
+  public List<BarShortcut> BarShortcuts { get; set; } = new List<BarShortcut>();
 
   public void OnZeroHp(object? sender, EventArgs e) {
 
@@ -80,4 +81,7 @@ public partial class Character : Entity, ICsEntity, ICsAiEntity {
 
   [NotMapped]
   public ICsEntity? Target { get; set; }
+
+  public List<SkillWrapper> SkillWrappers { get; set; } = new();
+
 }

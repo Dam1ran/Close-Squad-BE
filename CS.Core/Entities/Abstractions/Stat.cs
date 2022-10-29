@@ -1,4 +1,6 @@
 using System.ComponentModel.DataAnnotations.Schema;
+using CS.Core.Enums;
+using CS.Core.Exceptions;
 
 namespace CS.Core.Entities.Abstractions;
 public class Stat {
@@ -61,4 +63,34 @@ public class Stat {
 
   public void Tick() => AddCurrentAmount(RegenerationAmountPerTick);
 
+  public void Set(StatOperation statOperation, double value) {
+    switch (statOperation)
+    {
+      case StatOperation.AddMaxPercent: {
+        AddMaxPercent(value);
+        break;
+      }
+      case StatOperation.AddMaxAmount: {
+        AddMaxAmount(value);
+        break;
+      }
+      case StatOperation.AddCurrentByMaxPercent: {
+        AddCurrentByMaxPercent(value);
+        break;
+      }
+      case StatOperation.SetCurrentByPercent: {
+        SetCurrentByPercent(value);
+        break;
+      }
+      case StatOperation.AddCurrentByPercent: {
+        AddCurrentByPercent(value);
+        break;
+      }
+      case StatOperation.AddCurrentAmount: {
+        AddCurrentAmount(value);
+        break;
+      }
+      default: throw new DomainValidationException($"{nameof(Stat)}: Case not defined for {nameof(StatOperation)}.{statOperation}.");
+    }
+  }
 }

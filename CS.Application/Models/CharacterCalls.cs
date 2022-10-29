@@ -27,3 +27,19 @@ public class CharacterUseActionCall: CharacterCall {
 public class CharacterTargetCall: CharacterCall {
   public string InstanceId { get; set; } = string.Empty;
 }
+
+public class CharacterAssignShortcutCall: CharacterCall {
+  public BarShortcutType BarShortcutType { get; set; }
+  public long UsingId { get; set; }
+  public int ShortcutIndex { get; set; }
+
+}
+
+public class CharacterClearShortcutCall: CharacterCall {
+  public int ShortcutIndex { get; set; }
+
+}
+
+public class CharacterUseSkillCall: CharacterCall {
+  public long SkillKeyId { get; set; }
+}

@@ -5,5 +5,7 @@ public enum AiAction {
   Drifting = 2,
   Following = 3,
   Approaching = 4,
-  Attacking = 5
+  Attacking = 5,
+  SkillApply = 6
+
 }

@@ -136,6 +136,7 @@ builder.Services.AddSingleton<ICharacterEngine, CharacterEngine>();
 builder.Services.AddSingleton<IHubService, HubService>();
 builder.Services.AddSingleton<IHubSender, HubSender>();
 builder.Services.AddSingleton<IWorldMapService, WorldMapService>();
+builder.Services.AddSingleton<ISkillService, SkillService>();
 
 builder.Services.AddSingleton<ITickService, TickService>();
 builder.Services.AddSingleton<TESTNAHUI>();

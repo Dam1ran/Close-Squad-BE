@@ -1,5 +1,13 @@
 
 ----------------
+/// push XXIII
+
+work on skill part I and infra
+delete shortcut bug
+attack hit time
+ranged attack ai
+solved bug at aggregating data after reboot
+shortcut bar crud and dto
 
 /// push XXII
 

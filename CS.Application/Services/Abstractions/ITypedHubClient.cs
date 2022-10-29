@@ -13,9 +13,9 @@ public interface ITypedHubClient {
   Task SendAggregatedData(AggregatedDataDto aggregatedDataDto);
   Task SendScoutQuadrantReport(ScoutQuadrantReport scoutQuadrantReport);
   Task SendServerDialog(ServerDialog dialog);
-  Task SetBarShortcuts(IEnumerable<BarShortcut> barShortcuts);
-  Task UpdateBarShortcut(BarShortcut barShortcut);
-  Task UpdateBarShortcuts(IEnumerable<BarShortcut> barShortcuts);
+  Task SetBarShortcuts(IEnumerable<BarShortcutDto> barShortcuts);
+  Task UpdateBarShortcuts(IEnumerable<BarShortcutDto> barShortcuts);
+  Task RemoveBarShortcut(int shortcutIndex);
   Task Reconnect();
   Task Disconnect();
 

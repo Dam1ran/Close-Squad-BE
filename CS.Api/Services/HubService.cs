@@ -60,8 +60,7 @@ public class HubService : IHubService {
   private void AggregateAndSendData(object? sender, EventArgs e) {
 
     var players = _playerService.GetPlayers();
-    var groups = _characterService.GetAll().GroupBy(c => c.PlayerId);
-    foreach (var group in groups) {
+    foreach (var group in _characterService.GetAll().GroupBy(c => c.PlayerId)) {
       var player = players.SingleOrDefault(p => p.Id == group.Key);
       if (player is null) {
         continue;

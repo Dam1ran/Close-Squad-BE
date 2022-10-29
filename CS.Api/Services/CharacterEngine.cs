@@ -69,7 +69,7 @@ public class CharacterEngine : ICharacterEngine {
         character.Status = CsEntityStatus.Awake;
         character.Position.SetLocationAndDestination(travelDirection);
 
-        await _characterService.Persist(character);
+        await _characterService.PersistAsync(character);
 
         await _mainHubContext.Clients
           .User(player.Nickname)

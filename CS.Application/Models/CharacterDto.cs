@@ -24,6 +24,8 @@ public class CharacterDto {
   public double XpPercent { get; set; }
 
   public TargetDto? Target { get; set; }
+  public List<StatDto> Stats { get; set; } = new();
+  public IEnumerable<long> SkillIds { get; set; } = new List<long>();
 
 
   public static CharacterDto FromCharacter(Character character) =>
@@ -43,7 +45,18 @@ public class CharacterDto {
       XpPercent = character.XpPercent,
       X = character.Position.LocationX,
       Y = character.Position.LocationY,
-      Target = TargetDto.FromCharacter(character)
+      Target = TargetDto.FromCharacter(character),
+      Stats = new List<StatDto>() {
+        new() { Name = "P.Attack", Value = character.Stats.PhysicalAttack.Current },
+        new() { Name = "M.Attack", Value = 12 },
+        new() { Name = "Speed", Value = character.Stats.Speed.Current * 1000 },
+        new() { Name = "A.Range", Value = character.Stats.AttackRange.Current },
+        new() { Name = "P.Defense", Value = character.Stats.PhysicalDefense.Current },
+        new() { Name = "M.Defense", Value = 5 },
+        new() { Name = "Hp.Regen", Value = character.Stats.Hp.RegenerationAmountPerTick },
+        new() { Name = "Mp.Regen", Value = character.Stats.Mp.RegenerationAmountPerTick },
+      },
+      SkillIds = character.SkillWrappers.Select(sw => sw.SkillKeyId) // temp
     };
 
 }

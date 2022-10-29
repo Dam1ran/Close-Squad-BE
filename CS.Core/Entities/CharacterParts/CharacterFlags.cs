@@ -1,5 +1,6 @@
 using CS.Core.Entities.Abstractions;
 using CS.Core.Enums;
+using CS.Core.Extensions;
 using CS.Core.ValueObjects;
 
 namespace CS.Core.Entities;
@@ -27,5 +28,15 @@ public partial class Character : Entity, ICsEntity, ICsInstance, ICsAiEntity {
     QuadrantIndex == Target.QuadrantIndex &&
     Target.Status != CsEntityStatus.Astray &&
     Target.Status != CsEntityStatus.Traveling;
+
+  public bool CanUseSkill(SkillWrapper skillWrapper) {
+    return
+      // !skillWrapper.IsSkillOnCoolDown() &&
+      !IsHitOnCoolDown() &&
+      IsAlive() &&
+      (!skillWrapper.Skill.HpConsume.HasValue || Stats.Hp.Current > skillWrapper.Skill.HpConsume) &&
+      (!skillWrapper.Skill.MpConsume.HasValue || Stats.Mp.Current > skillWrapper.Skill.MpConsume);
+      // item to consume
+  }
 
 }

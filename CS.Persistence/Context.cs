@@ -15,6 +15,8 @@ public class Context : DbContext, IContext {
   public DbSet<CsUser> CsUsers { get; set; } = null!;
   public DbSet<Player> Players { get; set; } = null!;
   public DbSet<Character> Characters { get; set; } = null!;
+  public DbSet<BarShortcut> BarShortcuts { get; set; } = null!;
+  public DbSet<SkillWrapper> SkillWrappers { get; set; } = null!;
 
   public DbSet<ServerAnnouncement> ServerAnnouncements { get; set; } = null!;
 

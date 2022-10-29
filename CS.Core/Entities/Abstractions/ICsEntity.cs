@@ -9,6 +9,7 @@ public interface ICsEntity: ICsInstance, IStats, IPosition {
   public CsEntityStatus Status { get; set; }
   public CsEntityClass Class { get; set; }
   public ICsEntity? Target { get; set; }
+  public List<SkillWrapper> SkillWrappers { get; set; }
   void UpdateStats(Func<Stats, Stats> updateFactory);
   void SetEngaged();
   void SetTraveling();

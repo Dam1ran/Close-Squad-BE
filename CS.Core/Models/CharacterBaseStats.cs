@@ -13,6 +13,7 @@ public class CharacterBaseStats {
   public double PhysicalAttackSpeed { get; set; }
   public double PhysicalDefense { get; set; }
   public double AttackRange { get; set; }
+  public double CastingSpeed { get; set; }
 
   public double Speed { get; set; }
 

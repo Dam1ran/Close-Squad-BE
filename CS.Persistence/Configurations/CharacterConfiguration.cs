@@ -3,6 +3,8 @@ using CS.Core.Entities;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore;
 using CS.Core.ValueObjects;
+using CS.Core.Enums;
+
 namespace CS.Persistence.Configurations;
 public class CharacterConfiguration : EntityConfiguration<Character> {
   public override string TableName => "Characters";
@@ -76,18 +78,27 @@ public class CharacterConfiguration : EntityConfiguration<Character> {
         mp.Ignore(m => m.RegenerationAmountPerTick);
       });
 
+      stats.Ignore(m => m.Collection);
       stats.Ignore(m => m.PhysicalAttack);
       stats.Ignore(m => m.PhysicalAttackSpeed);
       stats.Ignore(m => m.PhysicalDefense);
       stats.Ignore(m => m.AttackRange);
       stats.Ignore(m => m.Speed);
+      stats.Ignore(m => m.CastingSpeed);
 
     });
 
     builder
-      .HasMany(p => p.BarShortcuts)
+      .HasMany(c => c.BarShortcuts)
       .WithOne()
-      .HasForeignKey(c => c.CharacterId)
+      .HasForeignKey(bs => bs.CharacterId)
+      .OnDelete(DeleteBehavior.Cascade)
+      .IsRequired();
+
+    builder
+      .HasMany(c => c.SkillWrappers)
+      .WithOne()
+      .HasForeignKey(sw => sw.CharacterId)
       .OnDelete(DeleteBehavior.Cascade)
       .IsRequired();
 

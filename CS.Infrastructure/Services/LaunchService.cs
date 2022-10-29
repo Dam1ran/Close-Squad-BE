@@ -8,16 +8,20 @@ public class LaunchService : IHostedService {
 
   private readonly IWorldMapService _worldMapService;
   private readonly ICharacterService _characterService;
+  private readonly ISkillService _skillService;
 
   public LaunchService(
     IWorldMapService worldMapService,
-    ICharacterService characterService) {
+    ICharacterService characterService,
+    ISkillService skillService) {
     _worldMapService = Check.NotNull(worldMapService, nameof(worldMapService));
     _characterService = Check.NotNull(characterService, nameof(characterService));
+    _skillService = Check.NotNull(skillService, nameof(skillService));
   }
 
   public async Task StartAsync(CancellationToken cancellationToken) {
     _worldMapService.Init();
+    _skillService.Init();
     _characterService.Init();
     await Task.CompletedTask;
   }
