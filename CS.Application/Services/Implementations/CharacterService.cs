@@ -43,11 +43,11 @@ public class CharacterService : ICharacterService {
 
     _tickService.on_60s_tick += ClearLoggedOutPlayersAndCharacters;
   }
-    public void Init() {
-      characterStatsHelper.Init();
-    }
+  public void Init() {
+    characterStatsHelper.Init();
+  }
 
-    public async Task Create(Player player, Nickname characterNickname, CsEntityClass characterClass, byte gender, CancellationToken cancellationToken = default) {
+  public async Task Create(Player player, Nickname characterNickname, CsEntityClass characterClass, byte gender, CancellationToken cancellationToken = default) {
 
     using var scope = _serviceProvider.CreateScope();
     var _context = scope.ServiceProvider.GetRequiredService<IContext>();
@@ -85,6 +85,7 @@ public class CharacterService : ICharacterService {
           }
 
           characterStatsHelper.ConnectHandlersAndInit(character);
+          character.SetSearchCharacterInRadiusHandle(GetCharactersInRadius);
           characterStatsHelper.RecalculateStats(character);
 
           character.on_zero_hp += (sender, args) => {
@@ -229,6 +230,23 @@ public class CharacterService : ICharacterService {
     await _context.SaveChangesAsync();
 
   }
+
+  public IEnumerable<ICsEntity> GetCharactersInRadius(uint quadrantIndex, Position position, double radius) =>
+    GetAll().Where(c =>
+      c.QuadrantIndex == quadrantIndex &&
+      c.Status != CsEntityStatus.Astray &&
+      c.Status != CsEntityStatus.Traveling &&
+      c.Position.GetDistance(position) <= radius);
+
+  private bool IsPositionInRangeOfPosition(Position targetPosition, Position position, double? range) {
+    if (!range.HasValue || range.Value <= 0) {
+      return false;
+    }
+
+    return targetPosition.GetDistance(position) < range;
+  }
+
+  /*
   public IEnumerable<ICsEntity> GetSkillAffectedTargets(Character character, SkillWrapper skillWrapper) {
     var targets = new List<ICsEntity>();
 
@@ -278,7 +296,7 @@ public class CharacterService : ICharacterService {
     return targets;
 
   }
-
+*/
   private bool IsICsEntityFriendlyTo(ICsEntity csEntity, Character character) {
     var isFriendly = false;
 
@@ -306,12 +324,6 @@ public class CharacterService : ICharacterService {
     */
   }
 
-  private bool IsPositionInRangeOfPosition(Position targetPosition, Position position, double? range) {
-    if (!range.HasValue || range.Value <= 0) {
-      return false;
-    }
 
-    return targetPosition.GetDistance(position) < range;
-  }
 
 }

@@ -1,0 +1,4 @@
+[
+  { "EffectorKeyId": 1,   "KindType": "Friendly",   "EffectKeyId": 1  },
+  { "EffectorKeyId": 2,   "KindType": "Friendly",   "Radius": 20.0,   "EffectKeyId": 2  }
+]

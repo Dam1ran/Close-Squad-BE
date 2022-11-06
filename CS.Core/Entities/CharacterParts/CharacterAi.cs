@@ -187,6 +187,7 @@ public partial class Character : Entity, ICsEntity, ICsInstance, ICsAiEntity {
     }
   }
   public void MoveTo(double x, double y) {
+    // TODO: push to AI switch
     Position.SetDestination(x, y);
     CurrentAction = AiAction.Moving;
   }
@@ -205,22 +206,16 @@ public partial class Character : Entity, ICsEntity, ICsInstance, ICsAiEntity {
   }
   [NotMapped]
   private SkillWrapper? _applyingSkill;
-  public void ApplySkillToTarget(SkillWrapper skillWrapper) {
-    CurrentAction = AiAction.SkillApply;
-    Position.IsAtDestination = false;
-    _applyingSkill = skillWrapper;
-  }
+  // public void ApplySkillToTarget(SkillWrapper skillWrapper) {
+  //   CurrentAction = AiAction.SkillApply;
+  //   Position.IsAtDestination = false;
+  //   _applyingSkill = skillWrapper;
+  // }
 
 
 
   private bool IsTargetInAttackRange() => IsTargetInRange(Stats.AttackRange.Current);
-  private bool IsTargetInRange(double range) {
-    if (Target is null) {
-      return false;
-    }
-
-    return Position.GetDistance(Target!.Position) <= range;
-  }
+  private bool IsTargetInRange(double range) => Position.GetDistance(Target!.Position) <= range;
 
   private void SetDestinationToTargetReachDistance(double reachDistance) {
     if (Target is null) {
@@ -246,13 +241,13 @@ public partial class Character : Entity, ICsEntity, ICsInstance, ICsAiEntity {
     _nextHitTime = DateTimeOffset.Now.AddMilliseconds(attackTimeMs * PhysicalAttackSpeedHitTimeRatio);
   }
 
-  private void SetSkillAndHitCoolDown() {
-    if (_applyingSkill is null || !_applyingSkill.Skill.CoolDownMs.HasValue) {
+  private void SetSkillAndHitCoolDown(SkillWrapper skillWrapper) {
+    if (!skillWrapper.Skill.CoolDownMs.HasValue) {
       return;
     }
     var castSpeedCapRatio = Stats.CastingSpeed.Current / Stats.CastingSpeed.Cap;
-    var coolDownMs = Math.Ceiling(_applyingSkill.Skill.CoolDownMs.Value - _applyingSkill.Skill.CoolDownMs.Value * CastSpeedDifferenceRatio * castSpeedCapRatio);
-    _applyingSkill.CoolDown = DateTimeOffset.Now.AddMilliseconds(coolDownMs);
+    var coolDownMs = Math.Ceiling(skillWrapper.Skill.CoolDownMs.Value - skillWrapper.Skill.CoolDownMs.Value * CastSpeedDifferenceRatio * castSpeedCapRatio);
+    skillWrapper.CoolDown = DateTimeOffset.Now.AddMilliseconds(coolDownMs);
 
     _nextHitTime = DateTimeOffset.Now.AddMilliseconds(coolDownMs * MagicalAttackSpeedHitTimeRatio);
   }
@@ -273,11 +268,8 @@ public partial class Character : Entity, ICsEntity, ICsInstance, ICsAiEntity {
 
     // TODO formula engine
     var hitAmount = Math.Min(Target.Stats.PhysicalDefense.Current - Stats.PhysicalAttack.Current, 0);
-
-    Target.UpdateStats((stats) => {
-      stats.Hp.AddCurrentAmount(hitAmount);
-      return stats;
-    });
+    // TODO reflect dmg..
+    Target.Stats.UpdateStat(StatType.Hp, StatOperation.AddCurrentAmount, hitAmount);
 
     SetAttackAndHitCoolDown();
 
@@ -291,28 +283,33 @@ public partial class Character : Entity, ICsEntity, ICsInstance, ICsAiEntity {
       return;
     }
 
-
     if (Target.Target is null) {
       Target.Target = this;
     }
 
-
-    // SetEngaged();
+    // var skillEffects = _getEffectsOf!.Invoke(_applyingSkill.Skill);
+    // if (skillEffects.Any(se => se.Kind == SkillKindType.Enemy)) {
+    //   SetEngaged();
+    // }
     // Target.SetEngaged();
 
     // TODO formula engine
     // var hitAmount = Math.Min(Target.Stats.PhysicalDefense.Current - Stats.PhysicalAttack.Current, 0);
-    var hitAmount = _applyingSkill.Skill.EffectStats[0].Value; // TODO
+    // // var hitAmount = _applyingSkill.Skill.EffectStats[0].Value; // TODO
 
-    Target.UpdateStats((stats) => {
-      stats.Hp.AddCurrentAmount(hitAmount);
-      return stats;
-    });
+    // Target.UpdateStats((stats) => {
+    //   stats.Hp.AddCurrentAmount(hitAmount);
+    //   return stats;
+    // });
 
-    SetSkillAndHitCoolDown();
+    // SetSkillAndHitCoolDown();
 
-    on_damage_incurred?.Invoke(this, new(Target, hitAmount));
-    Target.ReceiveDamage(new DamageEventArgs(this, hitAmount));
+    // on_damage_incurred?.Invoke(this, new(Target, hitAmount));
+    // Target.ReceiveDamage(new DamageEventArgs(this, hitAmount));
+
+    // if friendly then 
+      //   _applyingSkill = null;
+    // CurrentAction = AiAction.None;
 
   }
 
@@ -326,6 +323,8 @@ public partial class Character : Entity, ICsEntity, ICsInstance, ICsAiEntity {
 
   public void TargetSelf() => Target = this;
   public void CancelTarget() => Target = null;
+
+  public bool IsSelfTargeted() => Target is not null && CsInstanceId == Target.CsInstanceId;
 
   public Position Position { get; set; } = new();
   public void SetEngaged() {
@@ -371,45 +370,161 @@ public partial class Character : Entity, ICsEntity, ICsInstance, ICsAiEntity {
     on_damage_received?.Invoke(this, damageEventArgs);
   }
 
-  public bool IsInSkillRange(ICsEntity csEntity, SkillWrapper skillWrapper) {
-    return Position.GetDistance(csEntity.Position) <= skillWrapper.Skill.CastRange;
-  }
+  public void UseSkill(SkillWrapper skillWrapper) {
 
-  public void UseSkill(SkillWrapper skillWrapper, IEnumerable<ICsEntity> targets) {
-    switch (skillWrapper.Skill.ActivationType) {
-      case SkillActivationType.Passive: {
-        UsePassiveSkill(skillWrapper, targets);
-        break;
+    if (!IsAlive() || IsHitOnCoolDown()) {
+      return;
+    }
+
+    if (skillWrapper.Skill.IsPassive) {
+
+      Effectors.Add(skillWrapper.Skill.Effectors);
+
+    } else if (skillWrapper.Skill.IsToggle) {
+
+      if (skillWrapper.IsToggleActivated) {
+        // Effects.SetExpireEffects(effects); TODO
+      } else {
+        // SetEffects(effects); TODO
       }
-      case SkillActivationType.Toggle: {
-        UseToggleSkill(skillWrapper, targets);
-        break;
-      }
-      case SkillActivationType.Active: {
-        UseActiveSkill(skillWrapper, targets);
-        break;
-      }
-      default: return;
+
+    } else {
+      // UseActiveSkill(skillWrapper, effects); TODO
     }
 
   }
 
-  private void UsePassiveSkill(SkillWrapper skillWrapper, IEnumerable<ICsEntity> targets) {
+/*
+  private void UseActiveSkill(SkillWrapper skillWrapper, IEnumerable<Effect> effects) {
+    foreach(var effect in effects) {
+      if (effect.TargetType == TargetType.Self)
+      {
+        if (skillWrapper.IsSkillOnCoolDown() || !Stats.CanBeConsumed(skillWrapper.Skill)) {
+          break;
+        }
+
+        Stats.Consume(skillWrapper.Skill);
+        // TODO inventory consume...
+        SetSkillAndHitCoolDown(skillWrapper);
+
+        ApplyEffect(this, effect, true);
+
+      }
+      else if (effect.TargetType == TargetType.Target && Target is not null && Target.QuadrantIndex == QuadrantIndex && skillWrapper.Skill.CastRange.HasValue)
+      {
+        if (effect.Kind == KindType.Enemy && IsSelfTargeted()) {
+          break;
+        }
+
+        if (!IsTargetInRange(skillWrapper.Skill.CastRange.Value)) {
+          SetApplyingSkill(skillWrapper);
+          break;
+        }
+
+        if (skillWrapper.IsSkillOnCoolDown() || !Stats.CanBeConsumed(skillWrapper.Skill)) {
+          break;
+        }
+
+        if (effect.Kind == KindType.Enemy) {
+          SetEngaged();
+          Target.SetEngaged();
+        }
+
+        Stats.Consume(skillWrapper.Skill);
+        // TODO inventory consume...
+        SetSkillAndHitCoolDown(skillWrapper);
+
+        ApplyEffect(Target, effect, true);
+
+      }
+      else if (effect.TargetType == TargetType.SelfRadius && effect.EffectRange.HasValue)
+      {
+        if (skillWrapper.IsSkillOnCoolDown() || !Stats.CanBeConsumed(skillWrapper.Skill)) {
+          break;
+        }
+
+        if (effect.Kind == KindType.Enemy) {
+          SetEngaged();
+        }
+
+        var affectedTargets =
+          _getCharactersInRadius!.Invoke(QuadrantIndex, Position, effect.EffectRange.Value)
+          .Where(t => t.CsInstanceId != CsInstanceId || effect.Kind == KindType.Friendly);
+
+        Stats.Consume(skillWrapper.Skill);
+        // TODO inventory consume...
+        SetSkillAndHitCoolDown(skillWrapper);
+
+        foreach(var affectedTarget in affectedTargets) {
+
+          ApplyEffect(affectedTarget, effect, true);
+
+          if (effect.Kind == KindType.Enemy) {
+            affectedTarget.SetEngaged();
+          }
+
+        }
+
+      }
+      else if (effect.TargetType == TargetType.TargetRadius && Target is not null && Target.QuadrantIndex == QuadrantIndex && skillWrapper.Skill.CastRange.HasValue && effect.EffectRange.HasValue)
+      {
+        if (effect.Kind == KindType.Enemy && IsSelfTargeted()) {
+          break;
+        }
+
+        if (!IsTargetInRange(skillWrapper.Skill.CastRange.Value)) {
+          SetApplyingSkill(skillWrapper);
+          break;
+        }
+
+        if (!Stats.CanBeConsumed(skillWrapper.Skill) || skillWrapper.IsSkillOnCoolDown()) {
+          break;
+        }
+
+        if (effect.Kind == KindType.Enemy) {
+          SetEngaged();
+        }
+
+        var affectedTargets =
+          _getCharactersInRadius!.Invoke(QuadrantIndex, Target.Position, effect.EffectRange.Value)
+          .Where(t => t.CsInstanceId != CsInstanceId || effect.Kind == KindType.Friendly);
+
+        Stats.Consume(skillWrapper.Skill);
+        // TODO inventory consume...
+        SetSkillAndHitCoolDown(skillWrapper);
+
+        foreach(var affectedTarget in affectedTargets) {
+
+          ApplyEffect(affectedTarget, effect, true);
+
+          if (effect.Kind == KindType.Enemy) {
+            affectedTarget.SetEngaged();
+          }
+
+        }
+
+      }
+
+    }
+  }
+*/
+  public void SetEffects(IEnumerable<Effect> effects) {
+
+    Stats.ApplyEffects(effects.Where(e => e.ApplyType == ApplyType.Instant));
+    Effects.Add(effects.Where(e => e.ApplyType != ApplyType.Instant));
 
   }
 
-  private void UseToggleSkill(SkillWrapper skillWrapper, IEnumerable<ICsEntity> targets) {
 
-  }
-
-  private void UseActiveSkill(SkillWrapper skillWrapper, IEnumerable<ICsEntity> targets) {
+  private void SetApplyingSkill(SkillWrapper skillWrapper) {
     _applyingSkill = skillWrapper;
     CurrentAction = AiAction.SkillApply;
-    // UpdateStats((characterStats) => {
-    //   characterStats.Hp.AddCurrentAmount(skillWrapper.Skill.EffectStats[0].Value);
-    //   characterStats.Mp.AddCurrentAmount(-skillWrapper.Skill.MpConsume!.Value);
-    //   return characterStats;
-    // });
   }
+
+
+  [NotMapped]
+  public Effects Effects { get; set; } = new();
+  [NotMapped]
+  public Effectors Effectors { get; set; } = new();
 
 }

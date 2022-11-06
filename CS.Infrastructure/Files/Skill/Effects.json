@@ -1,0 +1,4 @@
+[
+  { "EffectKeyId": 1,   "EffectStack": "PhysicalDefenseUp",         "Level": 0,    "ApplyType": "Passive",    "StatType": "PhysicalDefense",    "StatOperation": "AddMaxAndCurrentAmount",    "Value": 3.0  },
+  { "EffectKeyId": 2,   "EffectStack": "PhysicalDefenseAuraUp",     "Level": 0,    "ApplyType": "Buff",       "StatType": "PhysicalDefense",    "StatOperation": "AddMaxAndCurrentAmount",    "Value": 2.0,   "AvailableForTickSeconds": 1  }
+]

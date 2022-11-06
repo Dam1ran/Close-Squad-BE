@@ -6,4 +6,5 @@ public enum StatOperation {
   SetCurrentByPercent = 4,
   AddCurrentByPercent = 5,
   AddCurrentAmount = 6,
+  AddMaxAndCurrentAmount = 7,
 }

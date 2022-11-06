@@ -1,4 +1,3 @@
 [
-  { "SkillKeyId": 1, "SkillId": 1, "Level": 0, "ActivationType": "Active", "TargetType": "Self", "Kind": "Friendly", "EffectType": "Instant", "EffectStats": [ { "Type": "Hp", "Operation": "AddMaxAmount", "Value": 15.0 } ], "MpConsume": 20, "CoolDownMs": 5000 },
-  { "SkillKeyId": 2, "SkillId": 2, "Level": 0, "ActivationType": "Active", "TargetType": "Target", "Kind": "Enemy", "EffectType": "Instant", "EffectStats": [ { "Type": "Hp", "Operation": "AddMaxAmount", "Value": -25.0 } ], "MpConsume": 30, "CoolDownMs": 6000, "CastRange": 20.0 }
+  { "SkillKeyId": 1, "TargetType": "Self",  "EffectorKeyIds": [ 1, 2 ] }
 ]

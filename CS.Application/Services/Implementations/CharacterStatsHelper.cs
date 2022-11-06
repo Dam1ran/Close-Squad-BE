@@ -19,7 +19,7 @@ public class CharacterStatsHelper {
     using var charactersBaseStatsReader = new StreamReader(charactersBaseStatsPath);
     CharactersBaseStats
       = JsonConvert.DeserializeObject<List<CharacterBaseStats>>(charactersBaseStatsReader.ReadToEnd())
-      ?? throw new NotFoundException("CharactersBaseStats.json could not be loaded");
+      ?? throw new NotFoundException("CharactersBaseStats.json could not be loaded.");
 
     charactersBaseStatsReader.Close();
     charactersBaseStatsReader.Dispose();
@@ -32,7 +32,7 @@ public class CharacterStatsHelper {
     using var classesStatsModifiersReader = new StreamReader(levelClassesStatsModifiersPath);
     LevelClassesStatsModifiers
       = JsonConvert.DeserializeObject<List<LevelClassStatsModifiers>>(classesStatsModifiersReader.ReadToEnd())
-      ?? throw new NotFoundException("ClassStatsModifiers.json could not be loaded");
+      ?? throw new NotFoundException("ClassStatsModifiers.json could not be loaded.");
 
     classesStatsModifiersReader.Close();
     classesStatsModifiersReader.Dispose();

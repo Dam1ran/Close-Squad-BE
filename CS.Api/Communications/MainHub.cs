@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text.RegularExpressions;
 using CS.Api.Communications.Models;
 using CS.Application.Enums;
@@ -20,6 +21,7 @@ public partial class MainHub : Hub<ITypedHubClient> {
   private readonly IPlayerService _playerService;
   private readonly ICharacterService _characterService;
   private readonly ICharacterEngine _characterEngine;
+  private readonly ISkillService _skillService;
   private readonly IWorldMapService _worldMapService;
   private readonly IHubService _hubService;
 
@@ -29,6 +31,7 @@ public partial class MainHub : Hub<ITypedHubClient> {
     IPlayerService playerService,
     ICharacterService characterService,
     ICharacterEngine characterEngine,
+    ISkillService skillService,
     IWorldMapService worldMapService,
     IHubService hubService)
   {
@@ -37,6 +40,7 @@ public partial class MainHub : Hub<ITypedHubClient> {
     _playerService = Check.NotNull(playerService, nameof(playerService));
     _characterService = Check.NotNull(characterService, nameof(characterService));
     _characterEngine = Check.NotNull(characterEngine, nameof(characterEngine));
+    _skillService = Check.NotNull(skillService, nameof(skillService));
     _worldMapService = Check.NotNull(worldMapService, nameof(worldMapService));
     _hubService = Check.NotNull(hubService, nameof(hubService));
   }
@@ -307,11 +311,9 @@ public partial class MainHub : Hub<ITypedHubClient> {
 
     // TODO where to? position?hideout? quadrant? nearest town?
     character.XpLost = 0;
-    character.UpdateStats((characterStats) => {
-      characterStats.Hp.SetCurrentByPercent(50);
-      characterStats.Mp.SetCurrentByPercent(25);
-      return characterStats;
-    });
+    character.Stats.UpdateStat(StatType.Hp, StatOperation.SetCurrentByPercent, 50);
+    character.Stats.UpdateStat(StatType.Mp, StatOperation.SetCurrentByPercent, 25);
+
     character.Status = CsEntityStatus.Awake;
 
     await _characterService.PersistAsync(character);
@@ -453,12 +455,17 @@ public partial class MainHub : Hub<ITypedHubClient> {
       return;
     }
 
+    character.UseSkill(skillWrapper);
+
+    // var characters = _characterService.GetCharactersInRadius(character.QuadrantIndex, character.Position, 20.0);
+    // foreach (var characterInRadius in characters) {
+    //   Debug.WriteLine(characterInRadius.Nickname);
+    // }
     // var isTargetInSkillRange = 
 
 
     // var affectedTargets = _characterService.GetSkillAffectedTargets(character, skillWrapper);
 
-    character.UseSkill(skillWrapper, new List<ICsEntity>() { character.Target! });
 
   }
 

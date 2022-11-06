@@ -19,5 +19,5 @@ public interface ICharacterService {
   Task PersistAsync(Character character);
   Task AssignBarShortcutAsync(Character character, BarShortcutType barShortcutType, long usingId, int shortcutIndex);
   Task RemoveBarShortcutAsync(Character character,int shortcutIndex);
-  IEnumerable<ICsEntity> GetSkillAffectedTargets(Character character, SkillWrapper skillWrapper);
+  public IEnumerable<ICsEntity> GetCharactersInRadius(uint quadrantIndex, Position position, double radius);
 }

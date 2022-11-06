@@ -13,9 +13,6 @@ public class SkillWrapper : Entity {
   public bool IsToggleActivated { get; set; }
 
   [NotMapped]
-  public DateTimeOffset EffectTimeout { get; set; }
-
-  [NotMapped]
   public Skill Skill { get; set; } = null!;
 
   public long CharacterId { get; set; }

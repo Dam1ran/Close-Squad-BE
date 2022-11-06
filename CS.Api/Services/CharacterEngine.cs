@@ -38,6 +38,7 @@ public class CharacterEngine : ICharacterEngine {
     _hubService = Check.NotNull(hubService, nameof(hubService));
 
     _tickService.on_1000ms_tick += StartDelayedTasks;
+    _tickService.on_1000ms_tick += CharactersOnSecondTick;
     _tickService.on_100ms_tick += CharactersTick;
   }
 
@@ -123,6 +124,14 @@ public class CharacterEngine : ICharacterEngine {
         Task.Run(() => task.Value.Task.Start()).ConfigureAwait(false);
 
       }
+    }
+
+  }
+
+  private void CharactersOnSecondTick(object? sender, EventArgs e) {
+
+    foreach (var character in _characterService.GetAll()) {
+      character.OnSecondTick();
     }
 
   }

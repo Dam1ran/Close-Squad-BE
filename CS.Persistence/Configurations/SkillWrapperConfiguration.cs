@@ -11,7 +11,6 @@ public class SkillWrapperConfiguration : EntityConfiguration<SkillWrapper> {
 
     builder.Ignore(s => s.CoolDown);
     builder.Ignore(s => s.IsToggleActivated);
-    builder.Ignore(s => s.EffectTimeout);
     builder.Ignore(s => s.Skill);
 
   }

@@ -1,5 +1,16 @@
 
-----------------
+/// push XIV
+
+effector target part I
+passive effector
+aura
+effector radius
+stat methods
+effectors
+effects
+work on skill part II
+skill enums
+
 /// push XXIII
 
 work on skill part I and infra

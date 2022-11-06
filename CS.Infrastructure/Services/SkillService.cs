@@ -14,7 +14,9 @@ public class SkillService : ISkillService {
   private readonly ILogger<SkillService> _logger;
   private readonly IServiceProvider _serviceProvider;
 
-  private Dictionary<long, Skill> _skills = new();
+  private List<Skill> _skills = new();
+  private List<Effect> _effects = new();
+  private List<Effector> _effectors = new();
 
   public SkillService(
     ILogger<SkillService> logger,
@@ -32,8 +34,13 @@ public class SkillService : ISkillService {
           continue;
         }
 
-        if (_skills.TryGetValue(sw.SkillKeyId, out var skill)) {
+        var skill = _skills.SingleOrDefault(s => s.SkillKeyId == sw.SkillKeyId);
+        if (skill is not null) {
           sw.Skill = skill;
+          sw.Skill.Effectors = _effectors.Where(e => skill.EffectorKeyIds.Any(s => s == e.EffectorKeyId));
+          foreach (var effector in sw.Skill.Effectors) {
+            effector.Effect = _effects.SingleOrDefault(e => e.EffectKeyId == effector.EffectKeyId);
+          }
         } else {
           sw.SkillKeyId = -1;
         }
@@ -64,24 +71,50 @@ public class SkillService : ISkillService {
   }
 
   public void Init() {
-    var path = Path.Combine(Path.GetDirectoryName(
+    var skillsPath = Path.Combine(Path.GetDirectoryName(
         Assembly.GetExecutingAssembly().Location)!,
         "Files/Skill",
         $"Skills.json");
 
-    using var skillReader = new StreamReader(path);
-    var readSkills = JsonConvert.DeserializeObject<List<Skill>>(skillReader.ReadToEnd())
-      ?? throw new NotFoundException("Skills.json could not be loaded");
+    using var skillReader = new StreamReader(skillsPath);
+    _skills = JsonConvert.DeserializeObject<List<Skill>>(skillReader.ReadToEnd())
+      ?? throw new NotFoundException("Skills.json could not be loaded.");
 
     skillReader.Close();
     skillReader.Dispose();
 
-    for (var i = 0; i < readSkills.Count; i++) {
-      _skills.Add(readSkills[i].SkillKeyId, readSkills[i]);
-    }
-
     _logger.LogInformation($"-----------------------------------------------------------------------");
     _logger.LogInformation($"Loaded {_skills.Count()} skills.");
+
+    var effectorsPath = Path.Combine(Path.GetDirectoryName(
+        Assembly.GetExecutingAssembly().Location)!,
+        "Files/Skill",
+        $"Effectors.json");
+
+    using var effectorsReader = new StreamReader(effectorsPath);
+    _effectors = JsonConvert.DeserializeObject<List<Effector>>(effectorsReader.ReadToEnd())
+      ?? throw new NotFoundException("Effectors.json could not be loaded.");
+
+    effectorsReader.Close();
+    effectorsReader.Dispose();
+
+    _logger.LogInformation($"-----------------------------------------------------------------------");
+    _logger.LogInformation($"Loaded {_effectors.Count()} effectors.");
+
+    var effectsPath = Path.Combine(Path.GetDirectoryName(
+        Assembly.GetExecutingAssembly().Location)!,
+        "Files/Skill",
+        $"Effects.json");
+
+    using var effectsReader = new StreamReader(effectsPath);
+    _effects = JsonConvert.DeserializeObject<List<Effect>>(effectsReader.ReadToEnd())
+      ?? throw new NotFoundException("Effects.json could not be loaded.");
+
+    effectsReader.Close();
+    effectsReader.Dispose();
+
+    _logger.LogInformation($"-----------------------------------------------------------------------");
+    _logger.LogInformation($"Loaded {_effects.Count()} effects.");
   }
 
 }

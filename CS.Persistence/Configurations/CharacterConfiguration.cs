@@ -36,6 +36,8 @@ public class CharacterConfiguration : EntityConfiguration<Character> {
     builder.Ignore(c => c.Status);
     builder.Ignore(c => c.Target);
     builder.Ignore(m => m.EngagedTill);
+    builder.Ignore(m => m.Effectors);
+    builder.Ignore(m => m.Effects);
 
 
     builder.OwnsOne(player => player.Position, position => {
@@ -78,7 +80,7 @@ public class CharacterConfiguration : EntityConfiguration<Character> {
         mp.Ignore(m => m.RegenerationAmountPerTick);
       });
 
-      stats.Ignore(m => m.Collection);
+      stats.Ignore(m => m.StatsList);
       stats.Ignore(m => m.PhysicalAttack);
       stats.Ignore(m => m.PhysicalAttackSpeed);
       stats.Ignore(m => m.PhysicalDefense);

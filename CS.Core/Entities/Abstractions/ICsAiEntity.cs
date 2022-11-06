@@ -12,4 +12,6 @@ public interface ICsAiEntity: ICsEntity {
   public void TargetSelf();
   public void CancelTarget();
 
+  public bool IsSelfTargeted();
+
 }

@@ -35,7 +35,9 @@ public partial class Character : Entity, ICsEntity, ICsInstance, ICsAiEntity {
       !IsHitOnCoolDown() &&
       IsAlive() &&
       (!skillWrapper.Skill.HpConsume.HasValue || Stats.Hp.Current > skillWrapper.Skill.HpConsume) &&
-      (!skillWrapper.Skill.MpConsume.HasValue || Stats.Mp.Current > skillWrapper.Skill.MpConsume);
+      (!skillWrapper.Skill.MpConsume.HasValue || Stats.Mp.Current > skillWrapper.Skill.MpConsume) &&
+      (!skillWrapper.Skill.HpConsumePerTick.HasValue || Stats.Hp.Current > skillWrapper.Skill.HpConsumePerTick) &&
+      (!skillWrapper.Skill.MpConsumePerTick.HasValue || Stats.Mp.Current > skillWrapper.Skill.MpConsumePerTick);
       // item to consume
   }
 

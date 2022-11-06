@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Diagnostics;
 using CS.Core.Entities.Abstractions;
 using CS.Core.Enums;
 using CS.Core.ValueObjects;
@@ -31,7 +32,16 @@ public partial class Character : Entity, ICsEntity, ICsAiEntity {
     Stats.Init();
     Stats.Hp.on_zero_current += OnZeroHp;
   }
+  private Func<uint, Position, double, IEnumerable<ICsEntity>>? _getCharactersInRadius;
+  public void SetSearchCharacterInRadiusHandle(Func<uint, Position, double, IEnumerable<ICsEntity>> getCharactersInRadius) {
+    _getCharactersInRadius = getCharactersInRadius;
+  }
+
   public void Tick() {
+
+    if (Status == CsEntityStatus.Astray) {
+      return;
+    }
 
     CheckTarget();
 
@@ -54,17 +64,115 @@ public partial class Character : Entity, ICsEntity, ICsAiEntity {
 
   }
 
-  public uint QuadrantIndex { get; set; }
-  public Stats Stats { get; set; } = new();
-  private readonly object statsLock = new object();
+  public void OnSecondTick() {
 
-  public void UpdateStats(Func<Stats, Stats> updateFactory) {
+    if (Status == CsEntityStatus.Astray || Status == CsEntityStatus.Traveling) {
+      return;
+    }
 
-    lock (statsLock) {
-      Stats = updateFactory(Stats);
+    Effectors.ClearExpired();
+
+    var effectorWrappers = Effectors.GetUnapplied();
+
+    foreach(var effectorWrapper in effectorWrappers) {
+      // TODO Friendly/Enemy/All
+      var targets = GetTargetsOf(effectorWrapper.Effector);
+      foreach (var target in targets) {
+        if (effectorWrapper.Effector.Effect is null) {
+          continue;
+        }
+
+        target.SetEffects(new [] { effectorWrapper.Effector.Effect });
+      }
+
+      if (effectorWrapper.Effector.IsIndividualPassive()) {
+        Effectors.SetApplied(effectorWrapper);
+      }
+
+    }
+
+
+    Effects.ClearExpiredAndUnapplied();
+
+    var expiredEffects = Effects.GetExpired();
+    foreach(var expiredEffect in expiredEffects) {
+      Stats.ClearEffect(expiredEffect);
+    }
+    Effects.ClearExpired();
+
+    var unappliedEffectWrappers = Effects.GetUnapplied();
+    foreach(var unappliedEffectWrapper in unappliedEffectWrappers) {
+
+      Stats.ApplyEffect(unappliedEffectWrapper.Effect);
+
+      if (unappliedEffectWrapper.Effect.ApplyType != ApplyType.OverTime) {
+        Effects.SetApplied(unappliedEffectWrapper);
+      }
+
     }
 
   }
+
+  private IEnumerable<ICsEntity> GetTargetsOf(Effector effector) {
+
+    if (effector.IsTargeted && Target is null) {
+      return Enumerable.Empty<ICsEntity>();
+    }
+
+    var target = effector.IsTargeted ? Target! : this;
+
+    if (effector.Radius == 0) {
+      return new[] { target };
+    }
+
+    return _getCharactersInRadius!(QuadrantIndex, target.Position, effector.Radius);
+
+  }
+
+
+/*
+
+    var toggledSkillWrappers = SkillWrappers.Where(sw => sw.IsToggleActivated);
+    foreach (var toggledSkillWrapper in toggledSkillWrappers) {
+
+      if (Stats.CanUseToggleSkill(toggledSkillWrapper.Skill))
+      {
+        Stats.ConsumeTick(toggledSkillWrapper.Skill);
+      }
+      else
+      {
+        var skillEffects = _getEffectsOf!.Invoke(toggledSkillWrapper.Skill);
+        Effects.SetExpireEffects(skillEffects);
+        toggledSkillWrapper.IsToggleActivated = false;
+      }
+
+    }
+
+    Effects.ClearExpiredAndUnapplied();
+
+    // un-apply and clear expired
+    var expiredEffects = Effects.GetExpired();
+    foreach(var expiredEffect in expiredEffects) {
+      Stats.ClearEffect(expiredEffect);
+    }
+    Effects.ClearExpired();
+
+
+    var unappliedEffectWrappers = Effects.GetUnapplied();
+    foreach(var unappliedEffectWrapper in unappliedEffectWrappers) {
+
+      Stats.ApplyEffect(unappliedEffectWrapper.Effect);
+
+      if (unappliedEffectWrapper.Effect.ApplyType != ApplyType.OverTime) {
+        Effects.SetApplied(unappliedEffectWrapper);
+      }
+
+    }
+
+*/
+
+  public uint QuadrantIndex { get; set; }
+  public Stats Stats { get; set; } = new();
 
   public List<BarShortcut> BarShortcuts { get; set; } = new List<BarShortcut>();
 

@@ -29,13 +29,13 @@ public class Stat {
   [NotMapped]
   public double RegenerationAmountPerTick { get; set; }
 
-  public void AddMaxPercent(double maxPercent) {
+  private void AddMaxPercent(double maxPercent) {
     _maxModifierPercent += maxPercent;
 
     RecalculateMax();
   }
 
-  public void AddMaxAmount(double maxAmount) {
+  private void AddMaxAmount(double maxAmount) {
     _maxModifierAmount += maxAmount;
 
     RecalculateMax();
@@ -43,11 +43,11 @@ public class Stat {
 
   private void RecalculateMax() => _maxCalculated = _base + _base * _maxModifierPercent * 0.01 + _maxModifierAmount;
 
-  public void AddCurrentByMaxPercent(double percent) => AddCurrentAmount(_maxCalculated * percent * 0.01);
-  public void SetCurrentByPercent(double percent) => Current = Max * percent * 0.01;
-  public void AddCurrentByPercent(double percent) => AddCurrentAmount(Current * percent * 0.01);
+  private void AddCurrentByMaxPercent(double percent) => AddCurrentAmount(_maxCalculated * percent * 0.01);
+  private void SetCurrentByPercent(double percent) => Current = Math.Max(Max * percent * 0.01, 0);
+  private void AddCurrentByPercent(double percent) => AddCurrentAmount(Current * percent * 0.01);
 
-  public void AddCurrentAmount(double amount) {
+  private void AddCurrentAmount(double amount) {
 
     var sumValue = Current + amount;
     if (sumValue >= Max) {
@@ -63,34 +63,43 @@ public class Stat {
 
   public void Tick() => AddCurrentAmount(RegenerationAmountPerTick);
 
+  private readonly object _statLock = new object();
+
   public void Set(StatOperation statOperation, double value) {
-    switch (statOperation)
-    {
-      case StatOperation.AddMaxPercent: {
-        AddMaxPercent(value);
-        break;
+    lock (_statLock) {
+      switch (statOperation)
+      {
+        case StatOperation.AddMaxPercent: {
+          AddMaxPercent(value);
+          break;
+        }
+        case StatOperation.AddMaxAmount: {
+          AddMaxAmount(value);
+          break;
+        }
+        case StatOperation.AddCurrentByMaxPercent: {
+          AddCurrentByMaxPercent(value);
+          break;
+        }
+        case StatOperation.SetCurrentByPercent: {
+          SetCurrentByPercent(value);
+          break;
+        }
+        case StatOperation.AddCurrentByPercent: {
+          AddCurrentByPercent(value);
+          break;
+        }
+        case StatOperation.AddCurrentAmount: {
+          AddCurrentAmount(value);
+          break;
+        }
+        case StatOperation.AddMaxAndCurrentAmount: {
+          AddMaxAmount(value);
+          AddCurrentAmount(value);
+          break;
+        }
+        default: throw new DomainValidationException($"{nameof(Stat)}: Case not defined for {nameof(StatOperation)}.{statOperation}.");
       }
-      case StatOperation.AddMaxAmount: {
-        AddMaxAmount(value);
-        break;
-      }
-      case StatOperation.AddCurrentByMaxPercent: {
-        AddCurrentByMaxPercent(value);
-        break;
-      }
-      case StatOperation.SetCurrentByPercent: {
-        SetCurrentByPercent(value);
-        break;
-      }
-      case StatOperation.AddCurrentByPercent: {
-        AddCurrentByPercent(value);
-        break;
-      }
-      case StatOperation.AddCurrentAmount: {
-        AddCurrentAmount(value);
-        break;
-      }
-      default: throw new DomainValidationException($"{nameof(Stat)}: Case not defined for {nameof(StatOperation)}.{statOperation}.");
     }
   }
 }
